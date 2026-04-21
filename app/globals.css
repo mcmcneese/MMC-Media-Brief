@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mmc-bg: #F7F5F0;
+  --mmc-text: #1A1A1A;
+}
+
+html,
+body {
+  background-color: var(--mmc-bg);
+  color: var(--mmc-text);
+}
+
+/* Shake animation for invalid fields on Continue */
+@keyframes mmc-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.mmc-shake {
+  animation: mmc-shake 0.35s ease-in-out;
+}
+
+/* Date input: render native picker but keep typography consistent */
+input[type="date"] {
+  font-family: inherit;
+}
+
+/* Avoid iOS zoom on focus for inputs */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
