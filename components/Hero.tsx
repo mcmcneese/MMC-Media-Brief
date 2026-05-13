@@ -6,6 +6,12 @@ import { CONFIG } from "@/lib/config";
 
 interface HeroProps {
   onBegin: () => void;
+  /**
+   * Optional — when present, renders a small "Prepared for {company}" line
+   * under the headline. Set automatically when the prospect opens a
+   * tokenized link from the admin area.
+   */
+  prospectCompanyName?: string;
 }
 
 /**
@@ -16,7 +22,7 @@ interface HeroProps {
  * (defined in globals.css under `.mmc-hero`) give the background life
  * without distracting from the form below.
  */
-export default function Hero({ onBegin }: HeroProps) {
+export default function Hero({ onBegin, prospectCompanyName }: HeroProps) {
   // Split the headline so we can color the last word gold (like "Funnel" on the deck).
   // The split heuristic: if the headline contains the word "Brief", color it gold.
   // Otherwise color the final word.
@@ -53,6 +59,13 @@ export default function Hero({ onBegin }: HeroProps) {
           {lead}{" "}
           <span className="text-mmc-goldLight">{accent}</span>
         </h1>
+
+        {/* Personalized "Prepared for X" line when token is present */}
+        {prospectCompanyName ? (
+          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-mmc-goldLight">
+            Prepared for {prospectCompanyName}
+          </p>
+        ) : null}
 
         {/* Body */}
         <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">

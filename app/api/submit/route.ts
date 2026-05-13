@@ -9,6 +9,11 @@ import {
   buildMmcNotification,
   buildProspectConfirmation,
 } from "@/lib/email-templates";
+import {
+  getBriefByToken,
+  isAirtableConfigured,
+  updateBrief,
+} from "@/lib/airtable";
 
 // Node runtime — we use `fs` inside the docx generator to load the logo.
 export const runtime = "nodejs";
@@ -35,7 +40,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 1. Validate server-side (defense in depth)
+  // 1. Validate server-side (defense in depth). The schema strips unknown keys,
+  // so we read `briefToken` from the raw payload separately.
   const parsed = fullSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json(
@@ -48,6 +54,11 @@ export async function POST(req: NextRequest) {
     );
   }
   const data = parsed.data;
+  const briefToken =
+    payload && typeof payload === "object" && "briefToken" in payload &&
+    typeof (payload as Record<string, unknown>).briefToken === "string"
+      ? ((payload as Record<string, unknown>).briefToken as string).trim()
+      : "";
 
   try {
     // 2. Generate token + docx
@@ -60,6 +71,37 @@ export async function POST(req: NextRequest) {
     // 4. Build download URL
     const baseUrl = getProductionUrl();
     const downloadUrl = `${baseUrl.replace(/\/$/, "")}/api/download/${token}`;
+
+    // 4a. If this submission came in via a tokenized prospect link, write the
+    // final form data back to the matching Airtable record and flip its
+    // status to Submitted. Best-effort: if Airtable fails, we still let the
+    // prospect download their .docx and the MMC team still gets the email.
+    if (briefToken && isAirtableConfigured()) {
+      try {
+        const brief = await getBriefByToken(briefToken);
+        if (brief) {
+          await updateBrief(brief.id, {
+            status: "Submitted",
+            submittedAt: new Date().toISOString(),
+            formData: data,
+            // Keep contact info in sync with what the prospect actually entered,
+            // overriding any stale admin pre-fill.
+            prospectName: data.contactName,
+            prospectEmail: data.contactEmail,
+            companyName: data.companyName,
+          });
+          console.info(
+            `[submit] Airtable record ${brief.id} updated to Submitted (token ${briefToken}).`
+          );
+        } else {
+          console.warn(
+            `[submit] briefToken=${briefToken} provided but no Airtable record found.`
+          );
+        }
+      } catch (err) {
+        console.error("[submit] Airtable update failed (continuing):", err);
+      }
+    }
 
     // 5. Send emails via Resend (if API key is present). If not configured, we still
     // complete the submission and return success — the download link will still work
