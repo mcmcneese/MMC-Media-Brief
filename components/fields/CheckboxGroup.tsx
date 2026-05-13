@@ -87,8 +87,8 @@ export default function CheckboxGroup({
                       <path
                         d="M1.5 5.5l2 2 5-5"
                         fill="none"
-                        stroke="#C9A961"
-                        strokeWidth="1.6"
+                        stroke="#FFFFFF"
+                        strokeWidth="1.8"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />

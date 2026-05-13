@@ -10,12 +10,12 @@ const config: Config = {
     extend: {
       colors: {
         mmc: {
-          dark: "#0B1220",
-          accent: "#C9A961",
-          bg: "#F7F5F0",
-          text: "#1A1A1A",
-          muted: "#6B6B6B",
-          border: "#E5E2DC",
+          dark: "#1A1A1A",       // primary near-black
+          accent: "#525252",     // medium grey (replaces former gold)
+          bg: "#FAFAFA",         // cool off-white background
+          text: "#1A1A1A",       // body text
+          muted: "#6B6B6B",      // helper text, labels
+          border: "#E5E5E5",     // cool light grey for borders
           error: "#B91C1C",
           success: "#15803D",
         },

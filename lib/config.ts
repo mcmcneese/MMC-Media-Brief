@@ -21,14 +21,14 @@ export const CONFIG = {
     name: "Mercurius Media Capital",
     shortName: "MMC",
     tagline: "Turning Attention Into Ownership.",
-    logoPath: "/mmc-logo.svg",
+    logoPath: "/mmc-logo.png",
     colors: {
-      dark: "#0B1220",      // primary dark (navy/near-black)
-      accent: "#C9A961",    // gold accent
-      bg: "#F7F5F0",        // off-white background
+      dark: "#1A1A1A",      // primary near-black
+      accent: "#525252",    // medium grey (replaces former gold)
+      bg: "#FAFAFA",        // cool off-white background
       text: "#1A1A1A",      // body text
       textMuted: "#6B6B6B", // helper text, labels
-      border: "#E5E2DC",    // form field borders
+      border: "#E5E5E5",    // cool light grey for borders
       error: "#B91C1C",     // validation errors, word count over
       success: "#15803D",   // confirmation states
     },

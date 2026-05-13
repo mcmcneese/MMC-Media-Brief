@@ -71,11 +71,7 @@ export default function FormShell({
             type="button"
             onClick={onNext}
             disabled={isSubmitting}
-            className={`rounded-md px-6 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white disabled:opacity-60 ${
-              nextLabel === "Submit Brief"
-                ? "bg-mmc-accent text-mmc-dark hover:brightness-95"
-                : "bg-mmc-dark text-white hover:brightness-110"
-            }`}
+            className="rounded-md bg-mmc-dark px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white disabled:opacity-60"
           >
             {isSubmitting ? (
               <span className="inline-flex items-center gap-2">
