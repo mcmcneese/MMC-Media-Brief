@@ -38,10 +38,10 @@ export default function ProgressBar({ step }: ProgressBarProps) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label="Form progress"
-      className="h-1.5 w-full bg-mmc-border"
+      className="h-1 w-full bg-mmc-border/60"
     >
       <div
-        className="h-full bg-mmc-accent transition-[width] duration-300 ease-out"
+        className="h-full bg-mmc-gold transition-[width] duration-300 ease-out"
         style={{ width: `${pct}%` }}
       />
     </div>

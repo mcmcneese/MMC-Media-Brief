@@ -102,13 +102,45 @@ export const EMPTY_FORM_DATA: FormData = {
 };
 
 // Step index <-> name mapping.
+// `kicker`: small uppercase gold label above the section title (deck-style).
+// `title`:  big purple H1 displayed above the form card.
 export const STEPS = [
-  { index: 0, name: "Contact", title: "Contact" },
-  { index: 1, name: "Section 1", title: "Section 1 — Company Information" },
-  { index: 2, name: "Section 2", title: "Section 2 — Audience Details" },
-  { index: 3, name: "Section 3", title: "Section 3 — Past and Present Paid Media" },
-  { index: 4, name: "Section 4", title: "Section 4 — MMC Campaign Set Up" },
-  { index: 5, name: "Review", title: "Review & Submit" },
+  {
+    index: 0,
+    name: "Contact",
+    kicker: "Getting Started",
+    title: "Contact",
+  },
+  {
+    index: 1,
+    name: "Section 1",
+    kicker: "Section 1 of 4 · Company",
+    title: "Company Information",
+  },
+  {
+    index: 2,
+    name: "Section 2",
+    kicker: "Section 2 of 4 · Audience",
+    title: "Audience Details",
+  },
+  {
+    index: 3,
+    name: "Section 3",
+    kicker: "Section 3 of 4 · Paid Media",
+    title: "Past and Present Paid Media",
+  },
+  {
+    index: 4,
+    name: "Section 4",
+    kicker: "Section 4 of 4 · Campaign",
+    title: "Campaign Set Up",
+  },
+  {
+    index: 5,
+    name: "Review",
+    kicker: "Final Step",
+    title: "Review & Submit",
+  },
 ] as const;
 
 export type StepIndex = 0 | 1 | 2 | 3 | 4 | 5;

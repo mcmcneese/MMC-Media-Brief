@@ -4,11 +4,25 @@ interface MMCLogoProps {
   className?: string;
   height?: number;
   priority?: boolean;
+  /**
+   * "purple" → logo for light surfaces (default)
+   * "white"  → logo for dark surfaces (hero, dark headers)
+   */
+  variant?: "purple" | "white";
 }
 
-// Renders the MMC logo from /public. We use a plain <img> so Next.js doesn't
-// try to optimize an SVG (which it refuses by default).
-export default function MMCLogo({ className = "", height = 40, priority = false }: MMCLogoProps) {
+// Renders the MMC logo from /public. Plain <img> so Next.js doesn't try to
+// optimize a transparent brand asset (which it refuses by default for SVG
+// and re-encodes unhelpfully for transparent PNGs).
+export default function MMCLogo({
+  className = "",
+  height = 40,
+  priority = false,
+  variant = "purple",
+}: MMCLogoProps) {
+  const src =
+    variant === "white" ? CONFIG.BRAND.logoWhitePath : CONFIG.BRAND.logoPath;
+
   return (
     <span
       className={`inline-flex items-center ${className}`}
@@ -17,7 +31,7 @@ export default function MMCLogo({ className = "", height = 40, priority = false 
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={CONFIG.BRAND.logoPath}
+        src={src}
         alt={CONFIG.BRAND.name}
         style={{ height: "100%", width: "auto", display: "block" }}
         loading={priority ? "eager" : "lazy"}

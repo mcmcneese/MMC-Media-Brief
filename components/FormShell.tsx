@@ -8,6 +8,7 @@ import { STEPS } from "@/lib/types";
 interface FormShellProps {
   step: number;
   title: string;
+  kicker?: string;
   onBack?: () => void;
   onNext: () => void;
   backLabel?: string;
@@ -22,6 +23,7 @@ interface FormShellProps {
 export default function FormShell({
   step,
   title,
+  kicker,
   onBack,
   onNext,
   backLabel = "Back",
@@ -33,41 +35,50 @@ export default function FormShell({
   children,
 }: FormShellProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-mmc-bg">
-      {/* Top header */}
-      <header className="sticky top-0 z-20 w-full border-b border-mmc-border bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <div className="flex min-h-screen flex-col">
+      {/* Top header — sits over the cream body (no opaque white fill) */}
+      <header className="sticky top-0 z-20 w-full border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
           <div className="flex items-center gap-3">
-            <MMCLogo height={32} priority />
+            <MMCLogo height={56} priority />
           </div>
-          <div className="hidden text-sm font-semibold tracking-wide text-mmc-text sm:block">
-            MMC Media Brief
+          <div className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-mmc-gold md:block">
+            Media Brief
           </div>
-          <div className="text-xs font-medium text-mmc-muted sm:text-sm">
+          <div className="text-xs font-medium uppercase tracking-wider text-mmc-muted sm:text-sm">
             Step {step + 1} of {STEPS.length}
           </div>
         </div>
         <ProgressBar step={step} />
       </header>
 
-      {/* Hero (only on first step typically) */}
+      {/* Hero (only on first step) */}
       {hero}
 
       {/* Anchor for scroll-into-view from the hero CTA */}
       <div ref={formAnchorRef} aria-hidden="true" />
 
       {/* Main: sidebar + form card */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 sm:px-6">
-        <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 sm:px-8">
+        <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
           {sidebar ? (
-            <aside className="hidden lg:block lg:pt-8" aria-label="Brief navigation">
+            <aside className="hidden lg:block lg:pt-10" aria-label="Brief navigation">
               {sidebar}
             </aside>
           ) : null}
 
-          <div className="pt-8">
-            <h2 className="mb-6 text-xl font-semibold text-mmc-text sm:text-2xl">{title}</h2>
-            <div className="rounded-lg border border-mmc-border bg-white p-5 shadow-sm sm:p-8">
+          <div className="pt-8 sm:pt-10">
+            {/* Kicker + big purple H1 + gold rule (deck style) */}
+            <div className="mb-6 sm:mb-8">
+              {kicker ? <div className="mmc-kicker mb-3">{kicker}</div> : null}
+              <h2 className="text-3xl font-bold tracking-tight text-mmc-purple sm:text-4xl">
+                {title}
+              </h2>
+              <span className="mmc-rule mt-4" />
+            </div>
+
+            {/* White form card */}
+            <div className="rounded-lg border border-mmc-border bg-white p-5 shadow-[0_1px_2px_rgba(42,18,48,0.04),0_8px_24px_-8px_rgba(42,18,48,0.12)] sm:p-8">
               {children}
             </div>
           </div>
@@ -75,14 +86,14 @@ export default function FormShell({
       </main>
 
       {/* Sticky footer */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-mmc-border bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+      <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-mmc-border/70 bg-mmc-cream/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-8">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
               disabled={isSubmitting}
-              className="rounded-md border border-mmc-border bg-transparent px-5 py-3 text-sm font-medium text-mmc-text transition hover:bg-mmc-bg focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50"
+              className="rounded-md border border-mmc-border bg-white/60 px-5 py-3 text-sm font-medium text-mmc-text transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-50"
             >
               {backLabel}
             </button>
@@ -93,8 +104,8 @@ export default function FormShell({
             type="button"
             onClick={onNext}
             disabled={isSubmitting}
-            className={`rounded-md px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white disabled:opacity-60 ${
-              nextLabel === "Submit Brief" ? "bg-mmc-accent" : "bg-mmc-dark"
+            className={`inline-flex items-center gap-2 rounded-md px-7 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-60 ${
+              nextLabel === "Submit Brief" ? "bg-mmc-purple" : "bg-mmc-purple"
             }`}
           >
             {isSubmitting ? (

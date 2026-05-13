@@ -221,6 +221,7 @@ export default function FormPage() {
   }
 
   const title = STEPS[step].title;
+  const kicker = STEPS[step].kicker;
   const stepProps = { data, setField, errors, shakeKey };
 
   // Hero is only shown when the user is on the first step (Contact).
@@ -232,6 +233,7 @@ export default function FormPage() {
     <FormShell
       step={step}
       title={title}
+      kicker={kicker}
       onBack={step === 0 ? undefined : handleBack}
       onNext={handleNext}
       nextLabel={step === 5 ? "Submit Brief" : "Continue"}

@@ -21,16 +21,34 @@ export const CONFIG = {
     name: "Mercurius Media Capital",
     shortName: "MMC",
     tagline: "Turning Attention Into Ownership.",
-    logoPath: "/mmc-logo.png",
+    logoPath: "/mmc-logo.png",         // purple logo for light surfaces
+    logoWhitePath: "/mmc-logo-white.png", // white logo for dark surfaces (e.g. Hero)
     colors: {
-      dark: "#1A1A1A",      // primary near-black
-      accent: "#58264F",    // MMC brand purple (replaces former tan)
-      bg: "#FAFAFA",        // cool off-white background
-      text: "#1A1A1A",      // body text
-      textMuted: "#6B6B6B", // helper text, labels
-      border: "#E5E5E5",    // cool light grey for borders
-      error: "#B91C1C",     // validation errors, word count over
-      success: "#15803D",   // confirmation states
+      // Brand
+      purple: "#5D2B5E",      // primary brand purple — H1s, primary CTAs
+      purpleDeep: "#3A1A3D",
+      purpleDark: "#2A1230",  // gradient anchor
+      gold: "#B89043",        // brand gold — numbers, accents, hero CTA
+      goldLight: "#D4B370",
+
+      // Surfaces
+      cream: "#F5F2EC",       // warm off-white body bg
+      creamDeep: "#E8E3D7",
+      white: "#FFFFFF",
+
+      // Text
+      text: "#2A2A2A",
+      textMuted: "#6B6B6B",
+
+      // Utility
+      border: "#E0DACD",
+      error: "#B91C1C",
+      success: "#15803D",
+
+      // Legacy aliases (kept for back-compat in older code paths)
+      dark: "#2A2A2A",
+      accent: "#B89043",
+      bg: "#F5F2EC",
     },
   },
 

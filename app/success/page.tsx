@@ -11,22 +11,32 @@ function SuccessContent() {
   const href = token ? `/api/download/${encodeURIComponent(token)}` : "";
 
   return (
-    <div className="flex min-h-screen flex-col bg-mmc-bg">
-      <header className="border-b border-mmc-border bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <MMCLogo height={32} priority />
-          <div className="text-sm font-semibold tracking-wide text-mmc-text">MMC Media Brief</div>
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
+          <MMCLogo height={56} priority />
+          <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-mmc-gold md:block">
+            Media Brief
+          </span>
           <span />
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-16 sm:px-6">
-        <div className="w-full rounded-lg border border-mmc-border bg-white p-8 text-center shadow-sm sm:p-10">
+        <div className="w-full rounded-lg border border-mmc-border bg-white p-8 text-center shadow-[0_1px_2px_rgba(42,18,48,0.04),0_12px_32px_-12px_rgba(42,18,48,0.18)] sm:p-10">
           <div className="mb-5 flex justify-center">
-            <CheckCircle2 size={56} color="#58264F" strokeWidth={1.5} aria-hidden="true" />
+            <CheckCircle2 size={64} color="#5D2B5E" strokeWidth={1.5} aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-semibold text-mmc-text">Brief Submitted Successfully</h1>
-          <p className="mt-3 text-sm text-mmc-muted">
+          <div className="mb-2 flex items-center justify-center">
+            <span className="mmc-kicker">Brief Received</span>
+          </div>
+          <h1 className="text-2xl font-bold text-mmc-purple sm:text-3xl">
+            Brief Submitted <span className="text-mmc-gold">Successfully</span>
+          </h1>
+          <div className="mt-3 flex justify-center">
+            <span className="mmc-rule" />
+          </div>
+          <p className="mt-5 text-sm leading-relaxed text-mmc-muted">
             Thank you. Our team will be in touch shortly to schedule a media strategy review.
           </p>
 
@@ -34,7 +44,7 @@ function SuccessContent() {
             <a
               href={href}
               download
-              className="mt-8 inline-flex w-full items-center justify-center rounded-md bg-mmc-accent px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white sm:w-auto"
+              className="mt-8 inline-flex w-full items-center justify-center rounded-md bg-mmc-purple px-7 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white sm:w-auto"
             >
               Download Your Brief (.docx)
             </a>
@@ -57,10 +67,10 @@ export default function SuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-mmc-bg">
+        <div className="flex min-h-screen items-center justify-center">
           <div
             aria-label="Loading"
-            className="h-8 w-8 animate-spin rounded-full border-2 border-mmc-border border-t-mmc-dark"
+            className="h-8 w-8 animate-spin rounded-full border-2 border-mmc-border border-t-mmc-purple"
           />
         </div>
       }

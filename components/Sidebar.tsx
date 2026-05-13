@@ -9,7 +9,7 @@ interface SidebarProps {
   onJump: (step: StepIndex) => void;
 }
 
-// Short labels for the sidebar (full labels are used on the step pages themselves)
+// Short labels for the sidebar; full titles appear on each step page.
 const STEP_LABELS = [
   "Contact",
   "Company",
@@ -21,36 +21,34 @@ const STEP_LABELS = [
 
 export default function Sidebar({ currentStep, maxVisitedStep, onJump }: SidebarProps) {
   return (
-    <nav aria-label="Form progress" className="sticky top-24">
-      <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-mmc-muted">
-        Your Brief
-      </p>
-      <ol className="flex flex-col gap-1">
+    <nav aria-label="Brief progress" className="sticky top-24">
+      <p className="mmc-kicker mb-4 px-1">Your Brief</p>
+      <ol className="flex flex-col">
         {STEP_LABELS.map((label, idx) => {
           const i = idx as StepIndex;
+          const num = String(idx + 1).padStart(2, "0");
           const isCurrent = i === currentStep;
           const isVisited = i <= maxVisitedStep;
           const isCompleted = i < currentStep && isVisited;
           const isClickable = isVisited;
+          const isLast = idx === STEP_LABELS.length - 1;
 
-          const baseRow =
-            "group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition";
-          const stateClasses = isCurrent
-            ? "bg-mmc-accent/10 text-mmc-accent"
+          // Number color/state
+          const numClass = isCurrent
+            ? "text-mmc-gold"
             : isVisited
-            ? "text-mmc-text hover:bg-mmc-border/60 cursor-pointer"
-            : "text-mmc-muted cursor-not-allowed opacity-70";
+            ? "text-mmc-gold/80"
+            : "text-mmc-border";
 
-          const indicatorClasses = isCurrent
-            ? "border-mmc-accent bg-mmc-accent text-white"
-            : isCompleted
-            ? "border-mmc-accent bg-white text-mmc-accent"
+          // Label color/state
+          const labelClass = isCurrent
+            ? "text-mmc-purple font-semibold"
             : isVisited
-            ? "border-mmc-accent bg-white text-mmc-accent"
-            : "border-mmc-border bg-white text-mmc-muted";
+            ? "text-mmc-text"
+            : "text-mmc-muted";
 
           return (
-            <li key={label}>
+            <li key={label} className={isLast ? "" : "border-b border-mmc-border/60"}>
               <button
                 type="button"
                 onClick={() => {
@@ -58,15 +56,31 @@ export default function Sidebar({ currentStep, maxVisitedStep, onJump }: Sidebar
                 }}
                 disabled={!isClickable}
                 aria-current={isCurrent ? "step" : undefined}
-                className={`${baseRow} ${stateClasses}`}
+                className={`group flex w-full items-center gap-4 py-3.5 text-left transition ${
+                  isClickable
+                    ? "hover:bg-mmc-creamDeep/40 px-2 -mx-2 rounded-sm cursor-pointer"
+                    : "px-2 -mx-2 cursor-not-allowed"
+                }`}
               >
                 <span
                   aria-hidden="true"
-                  className={`flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 text-xs font-semibold ${indicatorClasses}`}
+                  className={`flex-none font-bold tabular-nums ${numClass} ${
+                    isCurrent ? "text-2xl" : "text-xl"
+                  }`}
                 >
-                  {isCompleted ? <Check size={12} strokeWidth={3} /> : idx + 1}
+                  {num}
                 </span>
-                <span className="text-sm font-medium">{label}</span>
+                <span className={`flex-1 text-sm leading-tight ${labelClass}`}>
+                  {label}
+                </span>
+                {isCompleted ? (
+                  <Check
+                    size={16}
+                    strokeWidth={2.5}
+                    className="flex-none text-mmc-gold"
+                    aria-label="completed"
+                  />
+                ) : null}
               </button>
             </li>
           );
