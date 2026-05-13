@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import FormShell from "@/components/FormShell";
+import Hero from "@/components/Hero";
+import Sidebar from "@/components/Sidebar";
 import ContactStep from "@/components/ContactStep";
 import Section1Company from "@/components/Section1Company";
 import Section2Audience from "@/components/Section2Audience";
@@ -29,10 +31,23 @@ export default function FormPage() {
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<FormData>(EMPTY_FORM_DATA);
   const [step, setStep] = useState<StepIndex>(0);
+  const [maxVisitedStep, setMaxVisitedStep] = useState<StepIndex>(0);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [shakeKey, setShakeKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
+
+  // Anchor we scroll to when leaving the hero or advancing steps.
+  const formAnchorRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToForm = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const el = formAnchorRef.current;
+    if (!el) return;
+    // Offset for the sticky header (~64px)
+    const headerOffset = 72;
+    const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({ top, behavior });
+  }, []);
 
   // --- Gate check + restore from localStorage ---
   useEffect(() => {
@@ -43,7 +58,10 @@ export default function FormPage() {
     const draft = loadDraft();
     if (draft) setData({ ...EMPTY_FORM_DATA, ...draft });
     const savedStep = loadStep();
-    if (savedStep >= 0 && savedStep <= 5) setStep(savedStep);
+    if (savedStep >= 0 && savedStep <= 5) {
+      setStep(savedStep);
+      setMaxVisitedStep(savedStep);
+    }
     setReady(true);
   }, [router]);
 
@@ -83,7 +101,6 @@ export default function FormPage() {
         return true;
       }
       const relevant = new Set<string>(STEP_FIELDS[current] ?? []);
-      // Section 3: if "No", sub-questions are not relevant
       if (current === 3 && data.hasAdvertised === "No") {
         ["pastVendors", "whatWorked", "whatDidntWork", "pastGeo", "pastCreative", "pastGoal"].forEach(
           (k) => relevant.delete(k)
@@ -104,7 +121,6 @@ export default function FormPage() {
 
   // --- Navigation handlers ---
   const focusFirstError = () => {
-    // Wait one tick to let DOM update with error attrs.
     setTimeout(() => {
       const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
       if (el) {
@@ -122,6 +138,16 @@ export default function FormPage() {
     }, 0);
   };
 
+  const advanceToStep = useCallback(
+    (target: StepIndex) => {
+      setStep(target);
+      setMaxVisitedStep((prev) => (target > prev ? target : prev));
+      // Scroll into the form region (past the hero) on every step change
+      setTimeout(() => scrollToForm("smooth"), 0);
+    },
+    [scrollToForm]
+  );
+
   const handleNext = () => {
     if (step === 5) {
       void submit();
@@ -131,30 +157,26 @@ export default function FormPage() {
       focusFirstError();
       return;
     }
-    setStep((s) => (Math.min(5, s + 1) as StepIndex));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    advanceToStep(Math.min(5, step + 1) as StepIndex);
   };
 
   const handleBack = () => {
-    setStep((s) => (Math.max(0, s - 1) as StepIndex));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    advanceToStep(Math.max(0, step - 1) as StepIndex);
   };
 
   const jumpTo = (target: StepIndex) => {
-    setStep(target);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (target > maxVisitedStep) return; // sidebar should already disable this; defense in depth
+    advanceToStep(target);
   };
 
   const submit = async () => {
     setSubmitError("");
     const result = fullSchema.safeParse(data);
     if (!result.success) {
-      // Map errors to first step they belong to and jump there
       const firstIssue = result.error.issues[0];
       const errKey = String(firstIssue.path[0] ?? "");
       const stepWithField = STEP_FIELDS.findIndex((fields) => fields.includes(errKey));
       const target = (stepWithField >= 0 ? stepWithField : 0) as StepIndex;
-      // Build errors for THAT step and jump
       setStep(target);
       setTimeout(() => {
         validateStep(target);
@@ -187,7 +209,6 @@ export default function FormPage() {
     }
   };
 
-  // --- Loading state while we hydrate from storage ---
   if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-mmc-bg">
@@ -200,8 +221,12 @@ export default function FormPage() {
   }
 
   const title = STEPS[step].title;
-
   const stepProps = { data, setField, errors, shakeKey };
+
+  // Hero is only shown when the user is on the first step (Contact).
+  // Once they advance, it disappears so the form is the focus.
+  const hero =
+    step === 0 ? <Hero onBegin={() => scrollToForm("smooth")} /> : null;
 
   return (
     <FormShell
@@ -211,6 +236,15 @@ export default function FormPage() {
       onNext={handleNext}
       nextLabel={step === 5 ? "Submit Brief" : "Continue"}
       isSubmitting={submitting}
+      hero={hero}
+      formAnchorRef={formAnchorRef}
+      sidebar={
+        <Sidebar
+          currentStep={step}
+          maxVisitedStep={maxVisitedStep}
+          onJump={jumpTo}
+        />
+      }
     >
       {step === 0 && <ContactStep {...stepProps} />}
       {step === 1 && <Section1Company {...stepProps} />}
@@ -230,6 +264,3 @@ export default function FormPage() {
     </FormShell>
   );
 }
-
-// Silence unused warning in build — kept for future partial-submit use
-void useMemo;

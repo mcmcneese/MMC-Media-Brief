@@ -58,6 +58,17 @@ export const CONFIG = {
   // Overridden at runtime by the NEXT_PUBLIC_PRODUCTION_URL env var if set.
   PRODUCTION_URL: "https://brief.mmc.us",
 
+  // --- HERO (introductory section above the form) ---
+  // Shown above Step 1 with a "Begin Brief" button that auto-scrolls into the form.
+  HERO: {
+    headline: "Welcome to the MMC Media Brief",
+    intro:
+      "Mercurius Media Capital invests in growth companies through media-for-equity partnerships. This brief helps our team understand your business, audience, and campaign goals so we can build a media strategy that drives real outcomes.",
+    meta:
+      "Takes about 10 minutes. Your progress auto-saves — you can resume any time from the same link.",
+    cta: "Begin Brief",
+  },
+
   // --- PROSPECT CONFIRMATION COPY ---
   // {{DOWNLOAD_LINK}} will be replaced with the actual download URL at send time.
   PROSPECT_CONFIRMATION_BODY: `Thanks for submitting your media brief to Mercurius Media Capital. Our team is reviewing your information and will be in touch to schedule a time to walk through Media Strategy. You can download a copy of your completed brief here: {{DOWNLOAD_LINK}}. — Mercurius Media Capital`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, RefObject } from "react";
 import MMCLogo from "./MMCLogo";
 import ProgressBar from "./ProgressBar";
 import { STEPS } from "@/lib/types";
@@ -13,6 +13,9 @@ interface FormShellProps {
   backLabel?: string;
   nextLabel: string;
   isSubmitting?: boolean;
+  hero?: ReactNode;
+  sidebar?: ReactNode;
+  formAnchorRef?: RefObject<HTMLDivElement>;
   children: ReactNode;
 }
 
@@ -24,13 +27,16 @@ export default function FormShell({
   backLabel = "Back",
   nextLabel,
   isSubmitting = false,
+  hero,
+  sidebar,
+  formAnchorRef,
   children,
 }: FormShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-mmc-bg">
       {/* Top header */}
       <header className="sticky top-0 z-20 w-full border-b border-mmc-border bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <MMCLogo height={32} priority />
           </div>
@@ -44,17 +50,33 @@ export default function FormShell({
         <ProgressBar step={step} />
       </header>
 
-      {/* Main content */}
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-32 pt-8 sm:px-6">
-        <h1 className="mb-6 text-xl font-semibold text-mmc-text sm:text-2xl">{title}</h1>
-        <div className="rounded-lg border border-mmc-border bg-white p-5 shadow-sm sm:p-8">
-          {children}
+      {/* Hero (only on first step typically) */}
+      {hero}
+
+      {/* Anchor for scroll-into-view from the hero CTA */}
+      <div ref={formAnchorRef} aria-hidden="true" />
+
+      {/* Main: sidebar + form card */}
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 sm:px-6">
+        <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
+          {sidebar ? (
+            <aside className="hidden lg:block lg:pt-8" aria-label="Brief navigation">
+              {sidebar}
+            </aside>
+          ) : null}
+
+          <div className="pt-8">
+            <h2 className="mb-6 text-xl font-semibold text-mmc-text sm:text-2xl">{title}</h2>
+            <div className="rounded-lg border border-mmc-border bg-white p-5 shadow-sm sm:p-8">
+              {children}
+            </div>
+          </div>
         </div>
       </main>
 
       {/* Sticky footer */}
       <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-mmc-border bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
           {onBack ? (
             <button
               type="button"
