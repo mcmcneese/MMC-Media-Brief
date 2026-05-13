@@ -20,6 +20,10 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
+function nodeBufferToBase64(buf: Buffer): string {
+  return buf.toString("base64");
+}
+
 export async function POST(req: NextRequest) {
   let payload: unknown = null;
   try {
@@ -125,7 +129,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, token });
+    // Return the .docx inline (base64) in the response so the client can save it
+    // to sessionStorage and offer a download immediately, bypassing the
+    // serverless-instance-bound in-memory store. The store is still kept as a
+    // best-effort fallback in case the prospect reopens the page on the same
+    // hot instance within 24h.
+    return NextResponse.json({
+      success: true,
+      token,
+      filename,
+      docxBase64: nodeBufferToBase64(buffer),
+    });
   } catch (err) {
     console.error("[submit] unhandled error:", err);
     // Best-effort error alert

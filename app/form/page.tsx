@@ -196,7 +196,24 @@ export default function FormPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.message || `Submission failed (${res.status})`);
       }
-      const body = (await res.json()) as { success: boolean; token: string };
+      const body = (await res.json()) as {
+        success: boolean;
+        token: string;
+        filename?: string;
+        docxBase64?: string;
+      };
+      // Cache the docx in sessionStorage so the success page can offer
+      // a download even if the in-memory store on the server has cycled.
+      if (body.docxBase64 && body.filename) {
+        try {
+          sessionStorage.setItem(
+            `mmc_brief_docx_${body.token}`,
+            JSON.stringify({ filename: body.filename, base64: body.docxBase64 })
+          );
+        } catch {
+          /* quota or disabled — server fallback still works */
+        }
+      }
       clearDraft();
       router.push(`/success?token=${encodeURIComponent(body.token)}`);
     } catch (err) {

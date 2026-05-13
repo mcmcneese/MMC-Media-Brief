@@ -1,14 +1,63 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import MMCLogo from "@/components/MMCLogo";
 
+interface CachedDocx {
+  filename: string;
+  base64: string;
+}
+
+function base64ToBlobUrl(base64: string): string {
+  const bin = atob(base64);
+  const len = bin.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  });
+  return URL.createObjectURL(blob);
+}
+
 function SuccessContent() {
   const params = useSearchParams();
   const token = params.get("token") ?? "";
-  const href = token ? `/api/download/${encodeURIComponent(token)}` : "";
+
+  // Try to recover the .docx from sessionStorage first (cached by /form/page on
+  // successful submission). Falls back to /api/download/[token] which depends
+  // on the in-memory store on the server.
+  const [cached, setCached] = useState<CachedDocx | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !token) return;
+    try {
+      const raw = sessionStorage.getItem(`mmc_brief_docx_${token}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CachedDocx;
+        setCached(parsed);
+        setBlobUrl(base64ToBlobUrl(parsed.base64));
+      }
+    } catch {
+      /* ignore */
+    }
+    // Revoke object URL on unmount
+    return () => {
+      setBlobUrl((url) => {
+        if (url) URL.revokeObjectURL(url);
+        return "";
+      });
+    };
+  }, [token]);
+
+  const downloadHref = useMemo(() => {
+    if (blobUrl) return blobUrl;
+    return token ? `/api/download/${encodeURIComponent(token)}` : "";
+  }, [blobUrl, token]);
+
+  const downloadFilename = cached?.filename;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,10 +93,10 @@ function SuccessContent() {
             A copy has also been sent to the MMC Media Strategy Team.
           </p>
 
-          {href ? (
+          {downloadHref ? (
             <a
-              href={href}
-              download
+              href={downloadHref}
+              download={downloadFilename}
               className="mt-8 inline-flex w-full items-center justify-center rounded-md bg-mmc-purple px-7 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white sm:w-auto"
             >
               Download Your Brief (.docx)
@@ -63,7 +112,9 @@ function SuccessContent() {
           )}
 
           <p className="mt-6 text-xs text-mmc-muted">
-            Download link is available for 24 hours.
+            {cached
+              ? "Available for download from this page now."
+              : "Download link is available for 24 hours."}
           </p>
         </div>
       </main>
