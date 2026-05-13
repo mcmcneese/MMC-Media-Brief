@@ -55,12 +55,22 @@ export const CONFIG = {
   // --- EMAIL ---
   EMAIL: {
     // The "from" address for all outbound email.
-    // The domain (mmc.us) must be verified in Resend.
-    from: "Mercurius Media Capital <mediastrategy@mmc.us>",
+    //
+    // Currently using Resend's built-in test sender `onboarding@resend.dev`.
+    // Limitation: with this sender, Resend will ONLY deliver to the account
+    // owner's email (matt@mmc.us). Prospect confirmation emails are
+    // intentionally SKIPPED in the submit route — see `route.ts` for the guard.
+    //
+    // To send from `mediastrategy@mmc.us` instead, verify the `mmc.us` domain
+    // in Resend (DNS records) and change this back to:
+    //   "Mercurius Media Capital <mediastrategy@mmc.us>"
+    from: "MMC Media Brief <onboarding@resend.dev>",
 
     // Every address in this array receives a copy of every submission (with .docx attached).
     // To add another stakeholder, just append their email to the list:
     //   mmcRecipients: ["matt@mmc.us", "new.person@mmc.us"],
+    // NOTE: while using the resend.dev sender, only the account owner's email
+    // (matt@mmc.us) will actually receive mail — Resend blocks all others.
     mmcRecipients: ["matt@mmc.us"],
 
     // If the submission API fails, the error is emailed here.
@@ -74,7 +84,7 @@ export const CONFIG = {
   // --- URLs ---
   // Used to build download links inside outbound emails.
   // Overridden at runtime by the NEXT_PUBLIC_PRODUCTION_URL env var if set.
-  PRODUCTION_URL: "https://brief.mmc.us",
+  PRODUCTION_URL: "https://mmc-media-brief.vercel.app",
 
   // --- HERO (introductory section above the form) ---
   // Shown above Step 1 with a "Begin Brief" button that auto-scrolls into the form.

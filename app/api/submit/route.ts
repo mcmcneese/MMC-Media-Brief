@@ -68,9 +68,16 @@ export async function POST(req: NextRequest) {
       );
     } else {
       const mmc = buildMmcNotification(data, downloadUrl);
-      const prospect = buildProspectConfirmation(downloadUrl);
 
-      // Send both emails concurrently; tolerate per-recipient failure.
+      // While we send from Resend's `onboarding@resend.dev` test sender, Resend
+      // only delivers to the account owner's email. Sending to prospect
+      // addresses would silently fail. Skip the prospect confirmation entirely
+      // until a custom domain is verified in Resend. The success page tells
+      // the prospect to download their brief directly.
+      const isUsingResendDev = CONFIG.EMAIL.from
+        .toLowerCase()
+        .includes("onboarding@resend.dev");
+
       const mmcPromise = resend.emails.send({
         from: CONFIG.EMAIL.from,
         to: [...CONFIG.EMAIL.mmcRecipients],
@@ -84,13 +91,16 @@ export async function POST(req: NextRequest) {
           },
         ],
       });
-      const prospectPromise = resend.emails.send({
-        from: CONFIG.EMAIL.from,
-        to: [data.contactEmail],
-        subject: prospect.subject,
-        text: prospect.text,
-        html: prospect.html,
-      });
+
+      const prospectPromise: Promise<{ skipped: true } | unknown> = isUsingResendDev
+        ? Promise.resolve({ skipped: true } as const)
+        : resend.emails.send({
+            from: CONFIG.EMAIL.from,
+            to: [data.contactEmail],
+            subject: CONFIG.EMAIL.prospectConfirmationSubject,
+            text: buildProspectConfirmation(downloadUrl).text,
+            html: buildProspectConfirmation(downloadUrl).html,
+          });
 
       const [mmcRes, prospectRes] = await Promise.allSettled([mmcPromise, prospectPromise]);
       if (mmcRes.status === "rejected") {
@@ -99,8 +109,14 @@ export async function POST(req: NextRequest) {
       if (prospectRes.status === "rejected") {
         console.error("[submit] Prospect confirmation email failed:", prospectRes.reason);
       }
-      // If BOTH failed, treat as error so ops gets notified. Otherwise succeed.
-      if (mmcRes.status === "rejected" && prospectRes.status === "rejected") {
+      if (isUsingResendDev) {
+        console.info(
+          "[submit] Skipped prospect confirmation email — Resend test sender (onboarding@resend.dev) only delivers to the account owner. Verify mmc.us in Resend to enable prospect confirmations."
+        );
+      }
+      // The only failure mode that surfaces to the user is the MMC notification
+      // failing. The prospect email is best-effort when active.
+      if (mmcRes.status === "rejected") {
         throw new Error(
           `Email delivery failed: ${
             mmcRes.reason instanceof Error ? mmcRes.reason.message : String(mmcRes.reason)

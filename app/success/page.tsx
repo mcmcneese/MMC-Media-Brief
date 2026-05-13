@@ -39,6 +39,10 @@ function SuccessContent() {
           <p className="mt-5 text-sm leading-relaxed text-mmc-muted">
             Thank you. Our team will be in touch shortly to schedule a media strategy review.
           </p>
+          <p className="mt-4 text-sm leading-relaxed text-mmc-text">
+            Please download a copy of your brief below for your records.
+            A copy has also been sent to the MMC Media Strategy Team.
+          </p>
 
           {href ? (
             <a
@@ -50,12 +54,16 @@ function SuccessContent() {
             </a>
           ) : (
             <p className="mt-6 text-xs text-mmc-muted">
-              No download token was provided. Check your email for a copy of your brief.
+              No download token was provided. Please contact{" "}
+              <a href="mailto:mediastrategy@mmc.us" className="underline">
+                mediastrategy@mmc.us
+              </a>{" "}
+              to request a copy.
             </p>
           )}
 
           <p className="mt-6 text-xs text-mmc-muted">
-            A confirmation has also been sent to your email.
+            Download link is available for 24 hours.
           </p>
         </div>
       </main>
