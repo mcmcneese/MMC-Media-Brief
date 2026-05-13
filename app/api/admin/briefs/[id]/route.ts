@@ -58,6 +58,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     adminNotes?: string;
     status?: BriefStatus;
     markSent?: boolean;
+    granolaNoteId?: string;
+    granolaNoteUrl?: string;
   };
   try {
     body = await req.json();
@@ -78,6 +80,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     patch.status = "Sent";
     patch.sentAt = new Date().toISOString();
   }
+  if (typeof body.granolaNoteId === "string") patch.granolaNoteId = body.granolaNoteId.trim();
+  if (typeof body.granolaNoteUrl === "string") patch.granolaNoteUrl = body.granolaNoteUrl.trim();
 
   try {
     const record = await updateBrief(params.id, patch);

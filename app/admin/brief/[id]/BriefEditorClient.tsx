@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Check } from "lucide-react";
 import type { BriefRecord, BriefStatus } from "@/lib/airtable";
+import GranolaNoteCard from "@/components/admin/GranolaNoteCard";
 
 interface BriefEditorClientProps {
   initialRecord: BriefRecord;
@@ -188,6 +189,17 @@ export default function BriefEditorClient({
           </div>
         </div>
       </section>
+
+      {/* Granola note linkage */}
+      <GranolaNoteCard
+        briefId={initialRecord.id}
+        initialNoteId={record.granolaNoteId}
+        initialNoteUrl={record.granolaNoteUrl}
+        onUpdate={({ granolaNoteId, granolaNoteUrl }) => {
+          setRecord((r) => ({ ...r, granolaNoteId, granolaNoteUrl }));
+          router.refresh();
+        }}
+      />
 
       {/* Read-only summary of the form_data, if any */}
       {record.formData ? (
