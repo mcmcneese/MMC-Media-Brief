@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Link2Off, RefreshCw, FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ExternalLink, Link2Off, RefreshCw, FileText, Sparkles, Check } from "lucide-react";
 import type { GranolaNote, GranolaNoteSummary } from "@/lib/granola";
 
 interface GranolaNoteCardProps {
@@ -26,6 +27,8 @@ export default function GranolaNoteCard({
   initialNoteUrl,
   onUpdate,
 }: GranolaNoteCardProps) {
+  const router = useRouter();
+
   const [noteId, setNoteId] = useState(initialNoteId);
   const [noteUrl, setNoteUrl] = useState(initialNoteUrl);
 
@@ -42,6 +45,12 @@ export default function GranolaNoteCard({
   const [transcript, setTranscript] = useState<GranolaNote["transcript"]>(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptErr, setTranscriptErr] = useState("");
+
+  const [prefilling, setPrefilling] = useState(false);
+  const [prefillErr, setPrefillErr] = useState("");
+  const [prefillResult, setPrefillResult] = useState<{
+    fields: string[];
+  } | null>(null);
 
   // When we have a linked noteId, fetch its metadata (without transcript).
   useEffect(() => {
@@ -122,6 +131,33 @@ export default function GranolaNoteCard({
     if (pickerNotes.length === 0) loadPickerPage();
   }
 
+  async function runPrefill() {
+    setPrefilling(true);
+    setPrefillErr("");
+    setPrefillResult(null);
+    try {
+      const res = await fetch("/api/admin/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ briefId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.message ?? "Pre-fill failed.");
+      }
+      const fields = Array.isArray(body.extractedFields)
+        ? (body.extractedFields as string[])
+        : [];
+      setPrefillResult({ fields });
+      // Surface the new formData on the brief editor without a hard reload.
+      router.refresh();
+    } catch (e) {
+      setPrefillErr(e instanceof Error ? e.message : "Pre-fill failed.");
+    } finally {
+      setPrefilling(false);
+    }
+  }
+
   async function fetchTranscript() {
     if (!noteId) return;
     setTranscriptLoading(true);
@@ -193,6 +229,10 @@ export default function GranolaNoteCard({
           transcriptLoading={transcriptLoading}
           transcriptErr={transcriptErr}
           onFetchTranscript={fetchTranscript}
+          prefilling={prefilling}
+          prefillErr={prefillErr}
+          prefillResult={prefillResult}
+          onPrefill={runPrefill}
           onUnlink={async () => {
             if (!confirm("Unlink this Granola note from the brief?")) return;
             try {
@@ -309,6 +349,10 @@ function LinkedNoteView({
   transcriptLoading,
   transcriptErr,
   onFetchTranscript,
+  prefilling,
+  prefillErr,
+  prefillResult,
+  onPrefill,
   onUnlink,
 }: {
   note: GranolaNote | null;
@@ -320,6 +364,10 @@ function LinkedNoteView({
   transcriptLoading: boolean;
   transcriptErr: string;
   onFetchTranscript: () => void;
+  prefilling: boolean;
+  prefillErr: string;
+  prefillResult: { fields: string[] } | null;
+  onPrefill: () => void;
   onUnlink: () => void;
 }) {
   const url = note?.web_url ?? fallbackUrl;
@@ -376,6 +424,62 @@ function LinkedNoteView({
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Pre-fill with Claude */}
+      <div className="rounded-md border border-mmc-purple/30 bg-mmc-purple/[0.04] p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
+            <div className="mb-1 flex items-center gap-2">
+              <Sparkles size={14} className="text-mmc-purple" aria-hidden="true" />
+              <span className="text-sm font-semibold text-mmc-purple">
+                Pre-fill brief from this note
+              </span>
+            </div>
+            <p className="text-xs leading-relaxed text-mmc-muted">
+              Claude reads the note&apos;s summary and transcript and fills in any
+              brief fields it can confidently determine. Your existing edits are preserved.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onPrefill}
+            disabled={prefilling}
+            className="inline-flex items-center gap-2 rounded-md bg-mmc-purple px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white disabled:opacity-60"
+          >
+            {prefilling ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                />
+                Extracting…
+              </>
+            ) : (
+              <>
+                <Sparkles size={12} aria-hidden="true" />
+                Pre-fill with Claude
+              </>
+            )}
+          </button>
+        </div>
+        {prefillErr ? (
+          <div className="mt-3 rounded-md border border-mmc-error/30 bg-mmc-error/5 p-2.5 text-xs text-mmc-error">
+            {prefillErr}
+          </div>
+        ) : null}
+        {prefillResult ? (
+          <div className="mt-3 rounded-md border border-mmc-success/30 bg-mmc-success/[0.06] p-2.5 text-xs text-mmc-success">
+            <div className="flex items-center gap-1.5">
+              <Check size={12} aria-hidden="true" />
+              {prefillResult.fields.length === 0
+                ? "Claude couldn't find anything to extract from this note."
+                : `Filled ${prefillResult.fields.length} field${
+                    prefillResult.fields.length === 1 ? "" : "s"
+                  }: ${prefillResult.fields.join(", ")}`}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Transcript */}
