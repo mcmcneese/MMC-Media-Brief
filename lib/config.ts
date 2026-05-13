@@ -24,7 +24,7 @@ export const CONFIG = {
     logoPath: "/mmc-logo.png",
     colors: {
       dark: "#1A1A1A",      // primary near-black
-      accent: "#525252",    // medium grey (replaces former gold)
+      accent: "#58264F",    // MMC brand purple (replaces former tan)
       bg: "#FAFAFA",        // cool off-white background
       text: "#1A1A1A",      // body text
       textMuted: "#6B6B6B", // helper text, labels

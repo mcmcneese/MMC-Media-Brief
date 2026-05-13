@@ -74,7 +74,7 @@ export default function RadioGroup({
                 }`}
               >
                 <span
-                  className={`h-2 w-2 rounded-full ${checked ? "bg-mmc-dark" : "bg-transparent"}`}
+                  className={`h-2 w-2 rounded-full ${checked ? "bg-mmc-accent" : "bg-transparent"}`}
                 />
               </span>
               <span className="text-sm text-mmc-text">{opt}</span>

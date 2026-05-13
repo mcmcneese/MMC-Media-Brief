@@ -57,7 +57,7 @@ function Section({
         <button
           type="button"
           onClick={() => onEdit(stepIndex)}
-          className="text-xs font-medium text-mmc-dark underline decoration-mmc-muted decoration-2 underline-offset-4 hover:text-mmc-muted"
+          className="text-xs font-medium text-mmc-dark underline decoration-mmc-accent decoration-2 underline-offset-4 hover:text-mmc-accent"
         >
           Edit
         </button>

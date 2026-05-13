@@ -62,7 +62,7 @@ export default function PasswordGate() {
           <button
             type="submit"
             disabled={busy || pw.length === 0}
-            className="rounded-md bg-mmc-dark px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50"
+            className="rounded-md bg-mmc-accent px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50"
           >
             Enter
           </button>

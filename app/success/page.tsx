@@ -23,7 +23,7 @@ function SuccessContent() {
       <main className="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-16 sm:px-6">
         <div className="w-full rounded-lg border border-mmc-border bg-white p-8 text-center shadow-sm sm:p-10">
           <div className="mb-5 flex justify-center">
-            <CheckCircle2 size={56} color="#1A1A1A" strokeWidth={1.5} aria-hidden="true" />
+            <CheckCircle2 size={56} color="#58264F" strokeWidth={1.5} aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-semibold text-mmc-text">Brief Submitted Successfully</h1>
           <p className="mt-3 text-sm text-mmc-muted">
@@ -34,7 +34,7 @@ function SuccessContent() {
             <a
               href={href}
               download
-              className="mt-8 inline-flex w-full items-center justify-center rounded-md bg-mmc-dark px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white sm:w-auto"
+              className="mt-8 inline-flex w-full items-center justify-center rounded-md bg-mmc-accent px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-white sm:w-auto"
             >
               Download Your Brief (.docx)
             </a>

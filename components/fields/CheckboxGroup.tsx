@@ -79,7 +79,7 @@ export default function CheckboxGroup({
                 <span
                   aria-hidden="true"
                   className={`inline-flex h-4 w-4 flex-none items-center justify-center rounded border-2 ${
-                    checked ? "border-mmc-accent bg-mmc-dark" : "border-mmc-border bg-white"
+                    checked ? "border-mmc-accent bg-mmc-accent" : "border-mmc-border bg-white"
                   }`}
                 >
                   {checked ? (
