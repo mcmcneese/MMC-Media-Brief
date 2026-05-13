@@ -59,7 +59,7 @@ export default function FormShell({
       <div ref={formAnchorRef} aria-hidden="true" />
 
       {/* Main: sidebar + form card */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 sm:px-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 sm:px-8">
         <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
           {sidebar ? (
             <aside className="hidden lg:block lg:pt-10" aria-label="Brief navigation">
@@ -85,15 +85,15 @@ export default function FormShell({
         </div>
       </main>
 
-      {/* Sticky footer */}
+      {/* Sticky footer — compact */}
       <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-mmc-border/70 bg-mmc-cream/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:px-8">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
               disabled={isSubmitting}
-              className="rounded-md border border-mmc-border bg-white/60 px-5 py-3 text-sm font-medium text-mmc-text transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-50"
+              className="rounded-md border border-mmc-border bg-white/60 px-3.5 py-1.5 text-xs font-medium text-mmc-text transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-50"
             >
               {backLabel}
             </button>
@@ -104,15 +104,13 @@ export default function FormShell({
             type="button"
             onClick={onNext}
             disabled={isSubmitting}
-            className={`inline-flex items-center gap-2 rounded-md px-7 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-60 ${
-              nextLabel === "Submit Brief" ? "bg-mmc-purple" : "bg-mmc-purple"
-            }`}
+            className="inline-flex items-center gap-1.5 rounded-md bg-mmc-purple px-5 py-1.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-60"
           >
             {isSubmitting ? (
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5">
                 <span
                   aria-hidden="true"
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
                 />
                 Submitting…
               </span>
