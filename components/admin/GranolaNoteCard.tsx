@@ -444,16 +444,27 @@ function LinkedNoteView({
           <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
             <button
               type="button"
-              disabled
-              aria-disabled="true"
-              title="Coming soon"
-              className="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-mmc-purple px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white opacity-60"
+              onClick={onPrefill}
+              disabled={prefilling}
+              className="inline-flex items-center gap-2 rounded-md bg-mmc-purple px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white disabled:opacity-60"
             >
-              <Sparkles size={12} aria-hidden="true" />
-              Pre-fill with Claude
+              {prefilling ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  />
+                  Extracting…
+                </>
+              ) : (
+                <>
+                  <Sparkles size={12} aria-hidden="true" />
+                  Pre-fill with Claude
+                </>
+              )}
             </button>
-            <p className="text-[11px] italic text-mmc-muted">
-              Pre-fill with Claude coming soon.
+            <p className="max-w-[260px] text-[11px] italic leading-snug text-mmc-muted sm:text-right">
+              Disclaimer — Pre-fill with Claude incurs API credit cost.
             </p>
           </div>
         </div>
