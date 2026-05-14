@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MMCLogo from "./MMCLogo";
 import { CONFIG } from "@/lib/config";
@@ -77,6 +78,16 @@ export default function PasswordGate() {
             Enter
           </button>
         </form>
+
+        {/* MMC team admin entry — subtle, below the prospect form */}
+        <div className="mt-6 border-t border-mmc-border/60 pt-4 text-center">
+          <Link
+            href="/admin"
+            className="text-xs font-medium text-mmc-muted underline decoration-mmc-gold/50 decoration-2 underline-offset-4 transition hover:text-mmc-purple hover:decoration-mmc-gold focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white"
+          >
+            MMC team? Sign in to admin →
+          </Link>
+        </div>
       </div>
     </div>
   );
