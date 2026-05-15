@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import MMCLogo from "./MMCLogo";
 import { CONFIG } from "@/lib/config";
 import { setUnlocked } from "@/lib/storage";
@@ -12,6 +13,7 @@ export default function PasswordGate() {
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -41,20 +43,31 @@ export default function PasswordGate() {
           <label htmlFor="pw" className="sr-only">
             Access code
           </label>
-          <input
-            id="pw"
-            type="password"
-            autoComplete="off"
-            autoFocus
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            placeholder="Access code"
-            aria-invalid={err ? "true" : "false"}
-            aria-describedby={err ? "pw-err" : undefined}
-            className={`w-full rounded-md border ${
-              err ? "border-mmc-error" : "border-mmc-border"
-            } bg-white px-4 py-3 text-mmc-text outline-none transition focus:border-mmc-purple focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white`}
-          />
+          <div className="relative">
+            <input
+              id="pw"
+              type={show ? "text" : "password"}
+              autoComplete="off"
+              autoFocus
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              placeholder="Access code"
+              aria-invalid={err ? "true" : "false"}
+              aria-describedby={err ? "pw-err" : undefined}
+              className={`w-full rounded-md border ${
+                err ? "border-mmc-error" : "border-mmc-border"
+              } bg-white px-4 py-3 pr-12 text-mmc-text outline-none transition focus:border-mmc-purple focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white`}
+            />
+            <button
+              type="button"
+              onClick={() => setShow((s) => !s)}
+              aria-label={show ? "Hide access code" : "Show access code"}
+              aria-pressed={show}
+              className="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-mmc-muted transition hover:bg-mmc-cream hover:text-mmc-text focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white"
+            >
+              {show ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+            </button>
+          </div>
           {err ? (
             <p id="pw-err" role="alert" className="text-sm text-mmc-error">
               {err}
