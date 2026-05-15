@@ -29,25 +29,15 @@ export default function PasswordGate() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-lg border border-mmc-border bg-white p-8 shadow-[0_1px_2px_rgba(42,18,48,0.04),0_12px_32px_-12px_rgba(42,18,48,0.18)] sm:p-10">
-        <div className="mb-7 flex justify-center">
+        <div className="mb-6 flex justify-center">
           <MMCLogo height={112} priority />
         </div>
 
-        {/* Kicker + rule */}
-        <div className="mb-3 flex items-center justify-center gap-3">
-          <span className="mmc-kicker">Media Brief · 2026</span>
-        </div>
-        <h1 className="text-center text-2xl font-bold text-mmc-purple sm:text-3xl">
-          Welcome
-        </h1>
-        <div className="mt-3 flex justify-center">
-          <span className="mmc-rule" />
-        </div>
-        <p className="mt-5 text-center text-sm leading-relaxed text-mmc-muted">
+        <p className="text-center text-[12px] italic leading-snug tracking-tight text-mmc-muted sm:whitespace-nowrap">
           Please enter the access code provided in your invitation email.
         </p>
 
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
+        <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-4" noValidate>
           <label htmlFor="pw" className="sr-only">
             Access code
           </label>
