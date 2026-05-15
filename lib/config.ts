@@ -21,8 +21,8 @@ export const CONFIG = {
     name: "Mercurius Media Capital",
     shortName: "MMC",
     tagline: "Turning Attention Into Ownership.",
-    logoPath: "/mmc-logo.png",         // purple logo for light surfaces
-    logoWhitePath: "/mmc-logo-white.png", // white logo for dark surfaces (e.g. Hero)
+    logoPath: "/groundwork_lockup.png",            // Groundwork purple lockup for light surfaces
+    logoWhitePath: "/groundwork_white_lockup.png", // Groundwork white lockup for dark surfaces (Hero)
     colors: {
       // Brand
       purple: "#5D2B5E",      // primary brand purple — H1s, primary CTAs

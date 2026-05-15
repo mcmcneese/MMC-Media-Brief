@@ -22,7 +22,7 @@ export default function AdminHeader({ showSignOut = true }: AdminHeaderProps) {
     <header className="sticky top-0 z-20 w-full border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
         <Link href="/admin/dashboard" className="flex items-center gap-3">
-          <MMCLogo height={48} priority />
+          <MMCLogo height={64} priority />
         </Link>
         <div className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-mmc-gold md:block">
           Brief Admin

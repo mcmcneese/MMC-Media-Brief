@@ -37,7 +37,7 @@ export default function Hero({ onBegin, prospectCompanyName }: HeroProps) {
       <div className="mx-auto w-full max-w-5xl">
         {/* Top bar: white logo */}
         <div className="mb-10 flex items-center justify-between sm:mb-14">
-          <MMCLogo variant="white" height={56} priority />
+          <MMCLogo variant="white" height={80} priority />
           <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-mmc-goldLight sm:inline">
             Media Brief · 2026
           </span>

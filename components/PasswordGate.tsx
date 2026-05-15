@@ -30,7 +30,7 @@ export default function PasswordGate() {
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-lg border border-mmc-border bg-white p-8 shadow-[0_1px_2px_rgba(42,18,48,0.04),0_12px_32px_-12px_rgba(42,18,48,0.18)] sm:p-10">
         <div className="mb-7 flex justify-center">
-          <MMCLogo height={80} priority />
+          <MMCLogo height={112} priority />
         </div>
 
         {/* Kicker + rule */}
