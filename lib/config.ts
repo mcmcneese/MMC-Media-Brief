@@ -94,11 +94,11 @@ export const CONFIG = {
   HERO: {
     headline: "Welcome to the MMC Media Brief",
     intro:
-      "Mercurius Media Capital invests in growth companies through media-for-equity partnerships. This brief helps our team understand your business, audience, and campaign goals so we can build a media strategy that drives real outcomes.",
+      "Mercurius Media Capital invests in growth companies through media-for-equity partnerships. Your answers help us and our Limited Partners build a media strategy that drives real outcomes for your business.",
     meta:
       "Takes about 10 minutes. Your progress auto-saves — you can resume any time from the same link.",
     introPrefilled:
-      "This brief has been pre-filled with assistance from our past conversations. Please confirm each input and fill in any areas we may not have covered.",
+      "This brief has been pre-filled with assistance from our past conversations. Please confirm each input and fill in any areas we may not have covered. Your answers help us and our Limited Partners build a media strategy that drives real outcomes for your business.",
     metaPrefilled:
       "Should take about 5 minutes to review. Fields still needing your input are flagged in gold as you go.",
     cta: "Begin Brief",
