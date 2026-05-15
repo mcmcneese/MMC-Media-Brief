@@ -35,20 +35,9 @@ export default function Hero({ onBegin, prospectCompanyName }: HeroProps) {
       className="mmc-hero w-full px-4 pt-12 pb-16 text-white sm:px-8 sm:pt-16 sm:pb-20"
     >
       <div className="mx-auto w-full max-w-5xl">
-        {/* Top bar: white logo */}
-        <div className="mb-10 flex items-center justify-between sm:mb-14">
+        {/* Logo */}
+        <div className="mb-10 sm:mb-14">
           <MMCLogo variant="white" height={80} priority />
-          <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-mmc-goldLight sm:inline">
-            Media Brief · 2026
-          </span>
-        </div>
-
-        {/* Kicker + rule */}
-        <div className="mb-5 flex items-center gap-4">
-          <span className="mmc-kicker text-mmc-goldLight">
-            Media-for-Equity Partnership
-          </span>
-          <span className="mmc-rule" />
         </div>
 
         {/* Headline */}

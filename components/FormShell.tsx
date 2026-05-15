@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, RefObject } from "react";
+import { ReactNode, RefObject, useEffect, useState } from "react";
 import MMCLogo from "./MMCLogo";
 import ProgressBar from "./ProgressBar";
 import { STEPS } from "@/lib/types";
@@ -34,10 +34,57 @@ export default function FormShell({
   formAnchorRef,
   children,
 }: FormShellProps) {
+  // When the hero is shown (Step 1), hide the header until the prospect has
+  // scrolled past the hero (or clicks Begin Brief, which triggers a scroll).
+  // Eliminates the redundant logo and gives the hero the full viewport so
+  // the Begin CTA stays above the fold.
+  const heroPresent = Boolean(hero);
+  const [headerVisible, setHeaderVisible] = useState<boolean>(!heroPresent);
+
+  useEffect(() => {
+    if (!heroPresent) {
+      setHeaderVisible(true);
+      return;
+    }
+    setHeaderVisible(false);
+    const target = formAnchorRef?.current;
+    if (!target) return;
+
+    let raf: number | null = null;
+    function check() {
+      raf = null;
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      // Show as soon as the form anchor is approaching the top of the viewport.
+      setHeaderVisible(rect.top < 100);
+    }
+    function onScroll() {
+      if (raf !== null) return;
+      raf = requestAnimationFrame(check);
+    }
+
+    check();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
+  }, [heroPresent, formAnchorRef]);
+
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Top header — sits over the cream body (no opaque white fill) */}
-      <header className="sticky top-0 z-20 w-full border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md">
+      {/* Top header — fixed (out of document flow) so it can be visually
+          hidden during the hero without leaving a 64px gap above it. */}
+      <header
+        aria-hidden={!headerVisible}
+        className={`fixed top-0 left-0 right-0 z-20 w-full border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md transition-[transform,opacity] duration-300 ease-out ${
+          headerVisible
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-full opacity-0"
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
           <div className="flex items-center gap-3">
             <MMCLogo height={64} priority />
@@ -52,14 +99,17 @@ export default function FormShell({
         <ProgressBar step={step} />
       </header>
 
-      {/* Hero (only on first step) */}
+      {/* Hero (only on first step) — sits flush with the top of the body
+          because the header is `fixed` and starts offscreen. */}
       {hero}
 
       {/* Anchor for scroll-into-view from the hero CTA */}
       <div ref={formAnchorRef} aria-hidden="true" />
 
-      {/* Main: sidebar + form card */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 sm:px-8">
+      {/* Main: sidebar + form card. pt-20 reserves space under the fixed
+          header (~76px = header bar + progress bar) so titles never hide
+          behind it once the header slides into view. */}
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-20 sm:px-8">
         <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
           {sidebar ? (
             <aside className="hidden lg:block lg:pt-10" aria-label="Brief navigation">
