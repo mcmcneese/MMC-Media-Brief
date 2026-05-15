@@ -68,28 +68,36 @@ const CREATIVE_OPTIONS = [
   "Other",
 ];
 
-const multiSelectSchema = (allowedValues: string[]) => ({
-  anyOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["selected", "other"],
-      properties: {
-        selected: {
-          type: "array",
-          items: { type: "string", enum: allowedValues },
-        },
-        other: { type: "string" },
-      },
-    },
-    { type: "null" },
-  ],
+// Anthropic structured-outputs caps schemas at 16 parameters with unions
+// (anyOf or type-arrays). We have 30+ fields, so most use empty-string
+// sentinels for the "unknown" state — keeping union count at 2 (the two
+// currency fields, where 0 is a real value we don't want to confuse).
+
+const stringField = { type: "string" };
+
+const nullableNumber = {
+  anyOf: [{ type: "number" }, { type: "null" }],
+};
+
+// Add "" to each enum so the model can signal "unknown" without an anyOf.
+const enumOrEmpty = (values: string[]) => ({
+  type: "string",
+  enum: [...values, ""],
 });
 
-const nullableString = { type: ["string", "null"] };
-const nullableNumber = { type: ["number", "null"] };
-const nullableEnum = (values: string[]) => ({
-  anyOf: [{ type: "string", enum: values }, { type: "null" }],
+// Multi-selects: always an object. Empty selected[] + empty other = "unknown".
+// mergeExtraction filters those out so they don't overwrite existing data.
+const multiSelectSchema = (allowedValues: string[]) => ({
+  type: "object",
+  additionalProperties: false,
+  required: ["selected", "other"],
+  properties: {
+    selected: {
+      type: "array",
+      items: { type: "string", enum: allowedValues },
+    },
+    other: { type: "string" },
+  },
 });
 
 const BRIEF_SCHEMA = {
@@ -135,47 +143,47 @@ const BRIEF_SCHEMA = {
     "hasDisplayAds",
   ],
   properties: {
-    contactName: nullableString,
-    contactEmail: nullableString,
-    companyName: nullableString,
-    companyWebsite: nullableString,
-    companyDescription: nullableString,
-    usp: nullableString,
-    differentiators: nullableString,
-    competitor1: nullableString,
-    competitor2: nullableString,
-    competitor3: nullableString,
-    pricing: nullableString,
-    availability: nullableString,
+    contactName: stringField,
+    contactEmail: stringField,
+    companyName: stringField,
+    companyWebsite: stringField,
+    companyDescription: stringField,
+    usp: stringField,
+    differentiators: stringField,
+    competitor1: stringField,
+    competitor2: stringField,
+    competitor3: stringField,
+    pricing: stringField,
+    availability: stringField,
     regulations: multiSelectSchema(REGULATION_OPTIONS),
     ltv: nullableNumber,
-    targetConsumer: nullableString,
-    businessType: nullableEnum(["B2B", "B2C", "Mix of both"]),
-    geographicFocus: nullableString,
-    interestsAndHabits: nullableString,
-    additionalPersonas: nullableString,
-    hasAdvertised: nullableEnum(["Yes", "No"]),
-    pastVendors: nullableString,
-    whatWorked: nullableString,
-    whatDidntWork: nullableString,
-    pastGeo: nullableString,
+    targetConsumer: stringField,
+    businessType: enumOrEmpty(["B2B", "B2C", "Mix of both"]),
+    geographicFocus: stringField,
+    interestsAndHabits: stringField,
+    additionalPersonas: stringField,
+    hasAdvertised: enumOrEmpty(["Yes", "No"]),
+    pastVendors: stringField,
+    whatWorked: stringField,
+    whatDidntWork: stringField,
+    pastGeo: stringField,
     pastCreative: multiSelectSchema(CREATIVE_OPTIONS),
-    pastGoal: nullableString,
-    primaryGoal: nullableEnum([
+    pastGoal: stringField,
+    primaryGoal: enumOrEmpty([
       "Brand Awareness",
       "Product Consideration",
       "Acquisition",
     ]),
-    kpis: nullableString,
-    successDefinition: nullableString,
-    trackingTech: nullableString,
-    seasonality: nullableString,
-    channelPreferences: nullableString,
-    startDate: nullableString, // ISO YYYY-MM-DD
-    endDate: nullableString,
+    kpis: stringField,
+    successDefinition: stringField,
+    trackingTech: stringField,
+    seasonality: stringField,
+    channelPreferences: stringField,
+    startDate: stringField, // ISO YYYY-MM-DD or ""
+    endDate: stringField,
     budget: nullableNumber,
-    hasTVCommercial: nullableEnum(["Yes", "No"]),
-    hasDisplayAds: nullableEnum(["Yes", "No"]),
+    hasTVCommercial: enumOrEmpty(["Yes", "No"]),
+    hasDisplayAds: enumOrEmpty(["Yes", "No"]),
   },
 };
 
@@ -187,12 +195,16 @@ Your job: read the supplied meeting transcript and/or summary and return a JSON 
 
 CRITICAL RULES
 1. Only fill a field when the transcript provides clear, direct evidence for the answer. Paraphrase what was said; do not invent.
-2. When a field is not discussed, you are unsure, or you would need to guess, return null for that field.
-3. Use the exact enum values listed in the schema for constrained fields (e.g. "B2B", "B2C", "Mix of both"; "Yes" / "No"; "Brand Awareness" / "Product Consideration" / "Acquisition").
+2. When a field is not discussed, you are unsure, or you would need to guess, signal "unknown" using these sentinels:
+   - String fields: return an empty string "".
+   - Enum fields (businessType, hasAdvertised, primaryGoal, hasTVCommercial, hasDisplayAds): return an empty string "" (it's a valid enum value in the schema).
+   - Number fields (ltv, budget): return null.
+   - Multi-select fields (regulations, pastCreative): return { "selected": [], "other": "" }.
+3. Use the exact enum values listed in the schema for constrained fields (e.g. "B2B", "B2C", "Mix of both"; "Yes" / "No"; "Brand Awareness" / "Product Consideration" / "Acquisition") — never paraphrase enum values.
 4. For currency fields (ltv, budget), return a plain number in USD (e.g. 1500000 for $1.5M). Do not include currency symbols or commas. If the transcript mentions a range, return the midpoint. If unsure, return null.
-5. For date fields (startDate, endDate), return ISO format YYYY-MM-DD. If the transcript only mentions a month or quarter, pick the first day of that period. If unsure, return null.
-6. For multi-select fields (regulations, pastCreative), return an object { selected: string[], other: string }. Use only the schema's allowed values for "selected". Put any concept that doesn't fit the allowed list into "other". If unsure, return null for the whole object — do NOT return an empty selected array.
-7. Be conservative. It is much better to leave fields null and let the prospect fill them in than to put incorrect values that the prospect has to correct.
+5. For date fields (startDate, endDate), return ISO format YYYY-MM-DD. If the transcript only mentions a month or quarter, pick the first day of that period. If unsure, return "".
+6. For multi-select fields (regulations, pastCreative), use only the schema's allowed values for "selected". Put any concept that doesn't fit the allowed list into "other". If unsure or not discussed, return { "selected": [], "other": "" }.
+7. Be conservative. It is much better to leave fields empty and let the prospect fill them in than to put incorrect values that the prospect has to correct.
 
 FIELD GUIDE (what each field captures)
 

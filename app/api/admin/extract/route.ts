@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import {
   AirtableConfigError,
@@ -13,6 +14,7 @@ import {
   mergeExtraction,
 } from "@/lib/claude";
 import {
+  GranolaApiError,
   GranolaConfigError,
   getNote,
   isGranolaConfigured,
@@ -173,7 +175,37 @@ export async function POST(req: NextRequest) {
     if (err instanceof GranolaConfigError) {
       return notConfigured(err.message);
     }
+    // Forward upstream Anthropic / Granola HTTP errors with their real status
+    // + message so the UI shows the actual failure instead of "Extraction failed."
+    if (err instanceof Anthropic.APIError) {
+      console.error(
+        `[/api/admin/extract] Anthropic API error (${err.status}):`,
+        err.message,
+        // err has additional fields (request_id, headers) — log all of them
+        JSON.stringify({ name: err.name, status: err.status }, null, 2)
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Claude API error (${err.status}): ${err.message}`,
+        },
+        { status: err.status >= 400 && err.status < 600 ? err.status : 500 }
+      );
+    }
+    if (err instanceof GranolaApiError) {
+      console.error(
+        `[/api/admin/extract] Granola API error (${err.status}):`,
+        err.message
+      );
+      return NextResponse.json(
+        { success: false, message: `Granola API error: ${err.message}` },
+        { status: err.status >= 400 && err.status < 600 ? err.status : 500 }
+      );
+    }
     console.error("[/api/admin/extract] failed:", err);
+    if (err instanceof Error) {
+      console.error("[/api/admin/extract] stack:", err.stack);
+    }
     return NextResponse.json(
       {
         success: false,
