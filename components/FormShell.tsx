@@ -34,19 +34,20 @@ export default function FormShell({
   formAnchorRef,
   children,
 }: FormShellProps) {
-  // When the hero is shown (Step 1), hide the header until the prospect has
-  // scrolled past the hero (or clicks Begin Brief, which triggers a scroll).
-  // Eliminates the redundant logo and gives the hero the full viewport so
-  // the Begin CTA stays above the fold.
+  // When the hero is shown (Step 1), hide BOTH the top header AND the
+  // sticky footer until the prospect has scrolled past the hero (or clicks
+  // Begin Brief, which triggers a scroll). Eliminates the redundant logo,
+  // gives the hero the full viewport so Begin CTA stays above the fold,
+  // and avoids competing with Begin by showing Back/Continue at the bottom.
   const heroPresent = Boolean(hero);
-  const [headerVisible, setHeaderVisible] = useState<boolean>(!heroPresent);
+  const [chromeVisible, setChromeVisible] = useState<boolean>(!heroPresent);
 
   useEffect(() => {
     if (!heroPresent) {
-      setHeaderVisible(true);
+      setChromeVisible(true);
       return;
     }
-    setHeaderVisible(false);
+    setChromeVisible(false);
     const target = formAnchorRef?.current;
     if (!target) return;
 
@@ -56,7 +57,7 @@ export default function FormShell({
       if (!target) return;
       const rect = target.getBoundingClientRect();
       // Show as soon as the form anchor is approaching the top of the viewport.
-      setHeaderVisible(rect.top < 100);
+      setChromeVisible(rect.top < 100);
     }
     function onScroll() {
       if (raf !== null) return;
@@ -78,9 +79,9 @@ export default function FormShell({
       {/* Top header — fixed (out of document flow) so it can be visually
           hidden during the hero without leaving a 64px gap above it. */}
       <header
-        aria-hidden={!headerVisible}
+        aria-hidden={!chromeVisible}
         className={`fixed top-0 left-0 right-0 z-20 w-full border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md transition-[transform,opacity] duration-300 ease-out ${
-          headerVisible
+          chromeVisible
             ? "translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-full opacity-0"
         }`}
@@ -135,8 +136,18 @@ export default function FormShell({
         </div>
       </main>
 
-      {/* Sticky footer — compact */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-mmc-border/70 bg-mmc-cream/90 backdrop-blur-md">
+      {/* Sticky footer — compact. Hides in lockstep with the header while
+          the prospect is on the full-bleed hero, so Begin Brief is the
+          only CTA visible. Slides up into view alongside the header once
+          they scroll past or click Begin. */}
+      <footer
+        aria-hidden={!chromeVisible}
+        className={`fixed bottom-0 left-0 right-0 z-20 border-t border-mmc-border/70 bg-mmc-cream/90 backdrop-blur-md transition-[transform,opacity] duration-300 ease-out ${
+          chromeVisible
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-full opacity-0"
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:px-8">
           {onBack ? (
             <button
