@@ -5,15 +5,18 @@ import TextArea from "./fields/TextArea";
 import RadioGroup from "./fields/RadioGroup";
 import type { FormData } from "@/lib/types";
 import { CONFIG } from "@/lib/config";
+import { isFieldEmpty } from "@/lib/form-utils";
 
 interface Props {
   data: FormData;
   setField: <K extends keyof FormData>(k: K, v: FormData[K]) => void;
   errors: Partial<Record<keyof FormData, string>>;
   shakeKey: number;
+  hasPrefill?: boolean;
 }
 
-export default function Section2Audience({ data, setField, errors, shakeKey }: Props) {
+export default function Section2Audience({ data, setField, errors, shakeKey, hasPrefill }: Props) {
+  const flag = (key: keyof FormData) => !!hasPrefill && isFieldEmpty(data[key]);
   return (
     <div className="flex flex-col gap-6">
       <TextInput
@@ -23,6 +26,7 @@ export default function Section2Audience({ data, setField, errors, shakeKey }: P
         required
         error={errors.targetConsumer}
         shake={!!errors.targetConsumer && shakeKey > 0}
+        needsInput={flag("targetConsumer")}
         data-field="targetConsumer"
       />
       <div data-field="businessType">
@@ -36,6 +40,7 @@ export default function Section2Audience({ data, setField, errors, shakeKey }: P
           layout="horizontal"
           error={errors.businessType}
           shake={!!errors.businessType && shakeKey > 0}
+          needsInput={flag("businessType")}
         />
       </div>
       <TextInput
@@ -45,6 +50,7 @@ export default function Section2Audience({ data, setField, errors, shakeKey }: P
         required
         error={errors.geographicFocus}
         shake={!!errors.geographicFocus && shakeKey > 0}
+        needsInput={flag("geographicFocus")}
         data-field="geographicFocus"
       />
       <TextInput
@@ -54,6 +60,7 @@ export default function Section2Audience({ data, setField, errors, shakeKey }: P
         required
         error={errors.interestsAndHabits}
         shake={!!errors.interestsAndHabits && shakeKey > 0}
+        needsInput={flag("interestsAndHabits")}
         data-field="interestsAndHabits"
       />
       <TextArea
@@ -65,6 +72,7 @@ export default function Section2Audience({ data, setField, errors, shakeKey }: P
         wordLimit={CONFIG.WORD_LIMITS.additionalPersonas}
         error={errors.additionalPersonas}
         shake={!!errors.additionalPersonas && shakeKey > 0}
+        needsInput={flag("additionalPersonas")}
         data-field="additionalPersonas"
       />
     </div>

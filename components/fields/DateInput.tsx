@@ -8,10 +8,12 @@ interface DateInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "ty
   error?: string;
   required?: boolean;
   shake?: boolean;
+  /** When true, shows a gold "Needs your input" hint next to the label. */
+  needsInput?: boolean;
 }
 
 const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function DateInput(
-  { label, helpText, error, required, shake, className = "", id, ...rest },
+  { label, helpText, error, required, shake, needsInput, className = "", id, ...rest },
   ref
 ) {
   const reactId = useId();
@@ -25,9 +27,17 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function DateInpu
 
   return (
     <div className={`flex flex-col gap-1 ${shake ? "mmc-shake" : ""}`}>
-      <label htmlFor={inputId} className="text-sm font-medium text-mmc-text">
-        {label}
-        {required ? <span aria-hidden="true" className="text-mmc-error"> *</span> : null}
+      <label htmlFor={inputId} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-mmc-text">
+        <span>
+          {label}
+          {required ? <span aria-hidden="true" className="text-mmc-error"> *</span> : null}
+        </span>
+        {needsInput ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-mmc-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-mmc-gold">
+            <span className="h-1.5 w-1.5 rounded-full bg-mmc-gold" aria-hidden="true" />
+            Needs your input
+          </span>
+        ) : null}
       </label>
       <input
         id={inputId}

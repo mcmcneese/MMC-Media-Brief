@@ -13,6 +13,8 @@ interface CheckboxGroupProps {
   value: MultiSelectValue;
   onChange: (v: MultiSelectValue) => void;
   shake?: boolean;
+  /** When true, shows a gold "Needs your input" hint next to the legend. */
+  needsInput?: boolean;
 }
 
 export default function CheckboxGroup({
@@ -25,6 +27,7 @@ export default function CheckboxGroup({
   value,
   onChange,
   shake,
+  needsInput,
 }: CheckboxGroupProps) {
   const reactId = useId();
   const groupId = `cg-${reactId}`;
@@ -52,9 +55,17 @@ export default function CheckboxGroup({
       aria-describedby={[helpId, errId].filter(Boolean).join(" ") || undefined}
       aria-invalid={error ? "true" : "false"}
     >
-      <legend className="text-sm font-medium text-mmc-text">
-        {label}
-        {required ? <span aria-hidden="true" className="text-mmc-error"> *</span> : null}
+      <legend className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-mmc-text">
+        <span>
+          {label}
+          {required ? <span aria-hidden="true" className="text-mmc-error"> *</span> : null}
+        </span>
+        {needsInput ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-mmc-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-mmc-gold">
+            <span className="h-1.5 w-1.5 rounded-full bg-mmc-gold" aria-hidden="true" />
+            Needs your input
+          </span>
+        ) : null}
       </legend>
       <div className="flex flex-col gap-2">
         {allOpts.map((opt) => {

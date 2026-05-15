@@ -271,13 +271,15 @@ export default function FormClient({
 
   const title = STEPS[step].title;
   const kicker = STEPS[step].kicker;
-  const stepProps = { data, setField, errors, shakeKey };
+  const hasPrefill = hasToken;
+  const stepProps = { data, setField, errors, shakeKey, hasPrefill };
 
   const hero =
     step === 0 ? (
       <Hero
         onBegin={() => scrollToForm("smooth")}
         prospectCompanyName={prospectCompanyName}
+        hasPrefill={hasPrefill}
       />
     ) : null;
 

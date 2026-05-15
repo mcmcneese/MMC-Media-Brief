@@ -5,12 +5,14 @@ import RadioGroup from "./fields/RadioGroup";
 import DateInput from "./fields/DateInput";
 import CurrencyInput from "./fields/CurrencyInput";
 import type { FormData } from "@/lib/types";
+import { isFieldEmpty } from "@/lib/form-utils";
 
 interface Props {
   data: FormData;
   setField: <K extends keyof FormData>(k: K, v: FormData[K]) => void;
   errors: Partial<Record<keyof FormData, string>>;
   shakeKey: number;
+  hasPrefill?: boolean;
 }
 
 function todayIso(): string {
@@ -21,7 +23,8 @@ function todayIso(): string {
   return `${y}-${m}-${day}`;
 }
 
-export default function Section4Campaign({ data, setField, errors, shakeKey }: Props) {
+export default function Section4Campaign({ data, setField, errors, shakeKey, hasPrefill }: Props) {
+  const flag = (key: keyof FormData) => !!hasPrefill && isFieldEmpty(data[key]);
   return (
     <div className="flex flex-col gap-6">
       <div data-field="primaryGoal">
@@ -35,6 +38,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
           layout="vertical"
           error={errors.primaryGoal}
           shake={!!errors.primaryGoal && shakeKey > 0}
+          needsInput={flag("primaryGoal")}
         />
       </div>
 
@@ -45,6 +49,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
         required
         error={errors.kpis}
         shake={!!errors.kpis && shakeKey > 0}
+        needsInput={flag("kpis")}
         data-field="kpis"
       />
       <TextInput
@@ -54,6 +59,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
         required
         error={errors.successDefinition}
         shake={!!errors.successDefinition && shakeKey > 0}
+        needsInput={flag("successDefinition")}
         data-field="successDefinition"
       />
       <TextInput
@@ -63,6 +69,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
         required
         error={errors.trackingTech}
         shake={!!errors.trackingTech && shakeKey > 0}
+        needsInput={flag("trackingTech")}
         data-field="trackingTech"
       />
       <TextInput
@@ -72,6 +79,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
         required
         error={errors.seasonality}
         shake={!!errors.seasonality && shakeKey > 0}
+        needsInput={flag("seasonality")}
         data-field="seasonality"
       />
       <TextInput
@@ -81,6 +89,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
         required
         error={errors.channelPreferences}
         shake={!!errors.channelPreferences && shakeKey > 0}
+        needsInput={flag("channelPreferences")}
         data-field="channelPreferences"
       />
 
@@ -93,6 +102,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
           required
           error={errors.startDate}
           shake={!!errors.startDate && shakeKey > 0}
+          needsInput={flag("startDate")}
           data-field="startDate"
         />
         <DateInput
@@ -103,6 +113,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
           required
           error={errors.endDate}
           shake={!!errors.endDate && shakeKey > 0}
+          needsInput={flag("endDate")}
           data-field="endDate"
         />
       </div>
@@ -115,6 +126,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
           required
           error={errors.budget}
           shake={!!errors.budget && shakeKey > 0}
+          needsInput={flag("budget")}
         />
       </div>
 
@@ -129,6 +141,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
           layout="horizontal"
           error={errors.hasTVCommercial}
           shake={!!errors.hasTVCommercial && shakeKey > 0}
+          needsInput={flag("hasTVCommercial")}
         />
       </div>
       <div data-field="hasDisplayAds">
@@ -142,6 +155,7 @@ export default function Section4Campaign({ data, setField, errors, shakeKey }: P
           layout="horizontal"
           error={errors.hasDisplayAds}
           shake={!!errors.hasDisplayAds && shakeKey > 0}
+          needsInput={flag("hasDisplayAds")}
         />
       </div>
     </div>

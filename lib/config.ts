@@ -88,12 +88,19 @@ export const CONFIG = {
 
   // --- HERO (introductory section above the form) ---
   // Shown above Step 1 with a "Begin Brief" button that auto-scrolls into the form.
+  // Two variants per body line — `intro` / `meta` for cold-start (no token,
+  // shared password path), `introPrefilled` / `metaPrefilled` for prospects
+  // arriving via a tokenized link that we've pre-populated for them.
   HERO: {
     headline: "Welcome to the MMC Media Brief",
     intro:
       "Mercurius Media Capital invests in growth companies through media-for-equity partnerships. This brief helps our team understand your business, audience, and campaign goals so we can build a media strategy that drives real outcomes.",
     meta:
       "Takes about 10 minutes. Your progress auto-saves — you can resume any time from the same link.",
+    introPrefilled:
+      "This brief has been pre-filled with assistance from our past conversations. Please confirm each input and fill in any areas we may not have covered.",
+    metaPrefilled:
+      "Should take about 5 minutes to review. Fields still needing your input are flagged in gold as you go.",
     cta: "Begin Brief",
   },
 

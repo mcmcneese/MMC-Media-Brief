@@ -12,6 +12,12 @@ interface HeroProps {
    * tokenized link from the admin area.
    */
   prospectCompanyName?: string;
+  /**
+   * True when the brief was pre-filled by MMC before being sent (i.e. arrived
+   * via a tokenized link). Swaps the intro + meta copy to the "please confirm
+   * and fill in gaps" variant.
+   */
+  hasPrefill?: boolean;
 }
 
 /**
@@ -22,7 +28,9 @@ interface HeroProps {
  * (defined in globals.css under `.mmc-hero`) give the background life
  * without distracting from the form below.
  */
-export default function Hero({ onBegin, prospectCompanyName }: HeroProps) {
+export default function Hero({ onBegin, prospectCompanyName, hasPrefill }: HeroProps) {
+  const intro = hasPrefill ? CONFIG.HERO.introPrefilled : CONFIG.HERO.intro;
+  const meta = hasPrefill ? CONFIG.HERO.metaPrefilled : CONFIG.HERO.meta;
   // Split the headline so we can color the last word gold (like "Funnel" on the deck).
   // The split heuristic: if the headline contains the word "Brief", color it gold.
   // Otherwise color the final word.
@@ -58,9 +66,9 @@ export default function Hero({ onBegin, prospectCompanyName }: HeroProps) {
 
         {/* Body */}
         <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">
-          {CONFIG.HERO.intro}
+          {intro}
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-white/65">{CONFIG.HERO.meta}</p>
+        <p className="mt-3 max-w-2xl text-sm text-white/65">{meta}</p>
 
         {/* CTA */}
         <div className="mt-10">

@@ -6,12 +6,14 @@ import CurrencyInput from "./fields/CurrencyInput";
 import CheckboxGroup from "./fields/CheckboxGroup";
 import type { FormData } from "@/lib/types";
 import { CONFIG } from "@/lib/config";
+import { isFieldEmpty } from "@/lib/form-utils";
 
 interface Props {
   data: FormData;
   setField: <K extends keyof FormData>(k: K, v: FormData[K]) => void;
   errors: Partial<Record<keyof FormData, string>>;
   shakeKey: number;
+  hasPrefill?: boolean;
 }
 
 const REGULATION_OPTIONS = [
@@ -26,7 +28,8 @@ const REGULATION_OPTIONS = [
   "None",
 ];
 
-export default function Section1Company({ data, setField, errors, shakeKey }: Props) {
+export default function Section1Company({ data, setField, errors, shakeKey, hasPrefill }: Props) {
+  const flag = (key: keyof FormData) => !!hasPrefill && isFieldEmpty(data[key]);
   return (
     <div className="flex flex-col gap-6">
       <TextInput
@@ -36,6 +39,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
         required
         error={errors.companyName}
         shake={!!errors.companyName && shakeKey > 0}
+        needsInput={flag("companyName")}
         data-field="companyName"
       />
       <TextInput
@@ -47,6 +51,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
         placeholder="https://example.com"
         error={errors.companyWebsite}
         shake={!!errors.companyWebsite && shakeKey > 0}
+        needsInput={flag("companyWebsite")}
         data-field="companyWebsite"
       />
       <TextArea
@@ -58,6 +63,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
         wordLimit={CONFIG.WORD_LIMITS.companyDescription}
         error={errors.companyDescription}
         shake={!!errors.companyDescription && shakeKey > 0}
+        needsInput={flag("companyDescription")}
         data-field="companyDescription"
       />
       <TextArea
@@ -69,6 +75,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
         wordLimit={CONFIG.WORD_LIMITS.usp}
         error={errors.usp}
         shake={!!errors.usp && shakeKey > 0}
+        needsInput={flag("usp")}
         data-field="usp"
       />
       <TextArea
@@ -80,6 +87,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
         wordLimit={CONFIG.WORD_LIMITS.differentiators}
         error={errors.differentiators}
         shake={!!errors.differentiators && shakeKey > 0}
+        needsInput={flag("differentiators")}
         data-field="differentiators"
       />
 
@@ -95,6 +103,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
             required
             error={errors.competitor1}
             shake={!!errors.competitor1 && shakeKey > 0}
+            needsInput={flag("competitor1")}
             data-field="competitor1"
           />
           <TextInput
@@ -104,6 +113,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
             required
             error={errors.competitor2}
             shake={!!errors.competitor2 && shakeKey > 0}
+            needsInput={flag("competitor2")}
             data-field="competitor2"
           />
           <TextInput
@@ -113,6 +123,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
             required
             error={errors.competitor3}
             shake={!!errors.competitor3 && shakeKey > 0}
+            needsInput={flag("competitor3")}
             data-field="competitor3"
           />
         </div>
@@ -125,6 +136,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
         required
         error={errors.pricing}
         shake={!!errors.pricing && shakeKey > 0}
+        needsInput={flag("pricing")}
         data-field="pricing"
       />
       <TextInput
@@ -134,6 +146,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
         required
         error={errors.availability}
         shake={!!errors.availability && shakeKey > 0}
+        needsInput={flag("availability")}
         data-field="availability"
       />
       <div data-field="regulations">
@@ -147,6 +160,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
           onChange={(v) => setField("regulations", v)}
           error={errors.regulations}
           shake={!!errors.regulations && shakeKey > 0}
+          needsInput={flag("regulations")}
         />
       </div>
       <div data-field="ltv">
@@ -157,6 +171,7 @@ export default function Section1Company({ data, setField, errors, shakeKey }: Pr
           required
           error={errors.ltv}
           shake={!!errors.ltv && shakeKey > 0}
+          needsInput={flag("ltv")}
         />
       </div>
     </div>
