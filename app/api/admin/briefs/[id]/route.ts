@@ -8,6 +8,7 @@ import {
   updateBrief,
   type BriefStatus,
 } from "@/lib/airtable";
+import type { FormData } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,6 +83,38 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   if (typeof body.granolaNoteId === "string") patch.granolaNoteId = body.granolaNoteId.trim();
   if (typeof body.granolaNoteUrl === "string") patch.granolaNoteUrl = body.granolaNoteUrl.trim();
+
+  // If the admin is changing any of the top-level contact/company columns,
+  // mirror the new values into the brief's formData JSON so the prospect
+  // sees them pre-filled when they next open /form?token=...
+  // No round trip when only adminNotes / status / granolaNote* change.
+  const isCompanyNameUpdate = typeof body.companyName === "string";
+  const isProspectNameUpdate = typeof body.prospectName === "string";
+  const isProspectEmailUpdate = typeof body.prospectEmail === "string";
+  if (isCompanyNameUpdate || isProspectNameUpdate || isProspectEmailUpdate) {
+    try {
+      const current = await getBriefById(params.id);
+      if (current) {
+        const nextFormData: FormData = { ...current.formData };
+        if (isCompanyNameUpdate) {
+          nextFormData.companyName = patch.companyName ?? "";
+        }
+        if (isProspectNameUpdate) {
+          nextFormData.contactName = patch.prospectName ?? "";
+        }
+        if (isProspectEmailUpdate) {
+          nextFormData.contactEmail = patch.prospectEmail ?? "";
+        }
+        patch.formData = nextFormData;
+      }
+    } catch (err) {
+      // Don't block the save on a mirror failure — log and continue.
+      console.warn(
+        "[/api/admin/briefs/[id]] failed to mirror top-level fields into formData:",
+        err
+      );
+    }
+  }
 
   try {
     const record = await updateBrief(params.id, patch);

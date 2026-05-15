@@ -66,12 +66,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const prospectName = (body.prospectName ?? "").trim();
+  const prospectEmail = (body.prospectEmail ?? "").trim();
+
+  // Seed the brief's formData JSON with the admin-entered contact/company
+  // values so the prospect lands on a Contact step that's already filled in.
+  // The prospect can edit any of these before submitting; if they do, their
+  // values overwrite ours via /api/submit.
+  const seedFormData: Record<string, string> = {};
+  if (companyName) seedFormData.companyName = companyName;
+  if (prospectName) seedFormData.contactName = prospectName;
+  if (prospectEmail) seedFormData.contactEmail = prospectEmail;
+
   try {
     const record = await createBrief({
       companyName,
-      prospectName: (body.prospectName ?? "").trim(),
-      prospectEmail: (body.prospectEmail ?? "").trim(),
+      prospectName,
+      prospectEmail,
       adminNotes: (body.adminNotes ?? "").trim(),
+      formData: seedFormData,
       // Pre-generate a token so the admin can copy a /form?token=... link the
       // moment the brief is created — flips to "Sent" once the link is sent.
       token: generateBriefToken(),
