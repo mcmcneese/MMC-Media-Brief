@@ -65,6 +65,42 @@ Capture these when we get the canonical LP data — the allocator must respect r
 - **`lead_time`** — some LPs need weeks; must interact with the campaign timing input so a
   long-lead LP isn't placed in a short flight.
 
+## 3.5. Data storage, refresh & token strategy
+
+Two separate problems: where the data lives (and how Matt refreshes it), and how we avoid
+re-sending the whole dataset to Claude on every call.
+
+### Storage — Hybrid (seed + Airtable override + cache) [decided]
+- **Committed seed**: the scraped data ships as typed files (`lib/data/lp-network.ts`,
+  `lib/data/portfolio-companies.ts`). Works immediately, zero infra, zero runtime cost.
+- **Airtable override**: two new tables in the existing base (`LPs`, `Portfolio Companies`).
+  At read time, **use Airtable if it has rows, else fall back to the committed seed.** Matt edits
+  in the same Airtable UI he uses for briefs — no deploy, no code.
+- **Server cache**: read Airtable into an in-memory cache with a short TTL (or Next `revalidate`)
+  so a strategy run does NOT hit Airtable every time. A manual "reload data" button can bust it.
+
+### Refresh — both row-edit and bulk replace [decided]
+- **Row edits** in Airtable for tweaks.
+- **Admin "paste JSON → replace all"** action for a full re-scrape / author export — swaps the
+  entire roster in one shot instead of editing rows by hand.
+
+### Token strategy — two representations + id-join
+Naive approach (full 14 LP + 18 portfolio records in every prompt) is expensive: Red Thread makes
+several sequential Claude calls, so the dataset gets re-sent per call and the cost multiplies and
+grows with the roster. Fix:
+1. **Compact index → Claude.** Only what's needed to reason/select: `id, name, layer,
+   primary_channels, 6–8 word essence, audience_tags, geo, min_spend` (~30–40 tokens/LP, ~500
+   total). It's stable, so it goes in a **prompt-cached** system block
+   (`cache_control: ephemeral`) — burst re-runs reuse it nearly free.
+2. **Full record stays app-side.** Rich `description / reach / ad_formats / content_genres` never
+   round-trip through Claude. The model returns selected `lp_id`s; **we hydrate full detail by id**
+   from the store to render the readout.
+3. **Portfolio companies out of the hot path.** The subject company comes from the brief, so the
+   18 portfolio records are NOT in the LP-selection prompt. Stored for UI / BD / optional
+   "comparable portfolio win" context, fetched only when referenced.
+
+Net: per-run token cost stays roughly flat regardless of roster size; re-runs are cheap.
+
 ## 4. The flow: auto-prepare, human confirms, then generate
 
 "Auto" means auto-**prepare the inputs**, not auto-**generate**. Nothing calls Claude until Matt
@@ -147,12 +183,18 @@ Splits the Setup-panel budget:
 
 ## 7. Architecture / files (when greenlit)
 
-- **`lib/lp-network.ts`** — typed 14-LP dataset (single source of truth; from author).
+- **`lib/data/lp-network.ts`, `lib/data/portfolio-companies.ts`** — committed seed datasets
+  (typed). Each record carries both a compact-index view and the full record.
+- **`lib/data-store.ts`** — read layer: Airtable-if-present-else-seed, in-memory cache w/ TTL,
+  helpers for the compact index and id→full-record hydration.
 - **`lib/strategy.ts`** — ported prompts; maps `brief.formData` + Setup inputs + raw context →
-  model input; runs via server-side `ANTHROPIC_API_KEY`; returns typed readout.
+  model input (compact index only, prompt-cached); runs via server-side `ANTHROPIC_API_KEY`;
+  returns typed readout; hydrates selected `lp_id`s to full records app-side.
 - **`app/api/admin/strategy/route.ts`** — admin-only (existing auth); generates + persists readout
   to Airtable; honors exclusions/pins/budget/timing.
-- **Airtable** — new long-text/JSON field (e.g. `strategyReadout`) + `strategyGeneratedAt`.
+- **`app/admin/data/`** — admin "Data" page: row links to Airtable + "paste JSON → replace all".
+- **Airtable** — new `LPs` + `Portfolio Companies` tables (override source); plus a long-text/JSON
+  field on briefs (e.g. `strategyReadout`) + `strategyGeneratedAt`.
 - **`BriefEditorClient`** — Strategy Setup panel + embedded readout (portraits, psychology bars,
   creator cards, red threads, roadmap, budget allocation).
 - Optionally wire auto-*prep* into the post-submit view / `/api/submit`.
@@ -162,16 +204,18 @@ Large multi-section generation (+ optional web search) is too slow for one Verce
 for streaming or a background job with a "generating…" state. Note `maxDuration` limits.
 
 ## 8. Open questions before build
-1. **Canonical LP data** from the Red Thread author (roster + the `min_spend` / `geo` / `lead_time`
-   fields; fix odd layer tags).
-2. **Web search in or out for v1?** Out = faster/cheaper; In = real creator/comp names.
-3. **Silent first-draft on submit, or generate-on-click only?** (Default: click only.)
-4. **Budget when media-for-equity** (no cash number) — `%`-only output confirmed?
+1. **Web search in or out for v1?** Out = faster/cheaper; In = real creator/comp names.
+2. **Silent first-draft on submit, or generate-on-click only?** (Default: click only.)
+3. **Budget when media-for-equity** (no cash number) — `%`-only output confirmed?
+4. **`min_spend` / `geo` / `lead_time` values** — scraped data lacks these; seed with best-effort
+   now, refine via Airtable later. (Roster itself: use scraped seed for now — decided.)
 
 ## 9. Build sequence (once greenlit)
-1. `lib/lp-network.ts` (real LP data).
-2. Strategy Setup panel (review/adjust UI).
-3. `lib/strategy.ts` + prompt (budget block, honoring exclusions/pins).
-4. `/api/admin/strategy` + Airtable field.
-5. Embedded readout UI.
-6. Wire auto-prep into post-submit view.
+1. Seed data files (`lib/data/lp-network.ts`, `portfolio-companies.ts`) with compact + full views.
+2. `lib/data-store.ts` (Airtable-override-else-seed + cache + index/hydrate helpers).
+3. Airtable `LPs` + `Portfolio Companies` tables; admin Data page (row links + paste-replace).
+4. Strategy Setup panel (review/adjust UI).
+5. `lib/strategy.ts` + prompt (compact index, prompt cache, budget block, exclusions/pins).
+6. `/api/admin/strategy` + brief `strategyReadout` field.
+7. Embedded readout UI (hydrate `lp_id`s to full records).
+8. Wire auto-prep into post-submit view.
