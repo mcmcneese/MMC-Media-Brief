@@ -135,6 +135,7 @@ export default async function DashboardPage() {
                         briefId={b.id}
                         token={b.token}
                         baseUrl={baseUrl}
+                        companyName={b.companyName}
                       />
                     </td>
                   </tr>
