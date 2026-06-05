@@ -20,12 +20,14 @@ import {
   isGranolaConfigured,
   transcriptToPlainText,
 } from "@/lib/granola";
+import { ShareFetchError, fetchShareText } from "@/lib/granola-share";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_DURATION_SECONDS = 60; // Vercel hint — Claude calls can take a moment.
-export const maxDuration = MAX_DURATION_SECONDS;
+// Vercel hint — Claude calls can take a moment. Must be a literal so Next.js
+// can statically read it (a const reference triggers an invalid-page-config warning).
+export const maxDuration = 60;
 
 function unauthorized() {
   return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
@@ -38,10 +40,14 @@ function notConfigured(message: string) {
 interface ExtractRequestBody {
   briefId?: string;
   /**
-   * Optional raw text to extract from. If omitted, the endpoint fetches the
-   * transcript of the brief's linked Granola note.
+   * Optional raw text to extract from. Highest priority source.
    */
   text?: string;
+  /**
+   * Optional public Granola *share* URL. Fetched and stripped to plain text
+   * (no Granola Business/Enterprise plan required). Used when `text` is empty.
+   */
+  shareUrl?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -84,9 +90,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Resolve the source text. Explicit `text` wins; otherwise pull from Granola.
+    // Resolve the source text in priority order:
+    //   1. Explicit pasted `text` (100%-reliable path)
+    //   2. A pasted public Granola *share* URL (no-plan fallback, best-effort)
+    //   3. The brief's linked Granola note via the official API (needs a plan)
     let sourceText = typeof body.text === "string" ? body.text.trim() : "";
     let usedGranola = false;
+    let usedShareUrl = false;
+
+    const shareUrl = typeof body.shareUrl === "string" ? body.shareUrl.trim() : "";
+    if (!sourceText && shareUrl) {
+      sourceText = (await fetchShareText(shareUrl)).trim();
+      usedShareUrl = true;
+      if (!sourceText) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Fetched the share link but couldn't extract any readable text. The page may be client-rendered — paste the notes directly instead.",
+          },
+          { status: 422 }
+        );
+      }
+    }
+
     if (!sourceText) {
       if (!brief.granolaNoteId) {
         return NextResponse.json(
@@ -163,6 +190,7 @@ export async function POST(req: NextRequest) {
       extractedFieldCount: extractedKeys.length,
       extractedFields: extractedKeys,
       usedGranola,
+      usedShareUrl,
       usage,
     });
   } catch (err) {
@@ -174,6 +202,13 @@ export async function POST(req: NextRequest) {
     }
     if (err instanceof GranolaConfigError) {
       return notConfigured(err.message);
+    }
+    if (err instanceof ShareFetchError) {
+      console.error(`[/api/admin/extract] Share fetch error:`, err.message);
+      return NextResponse.json(
+        { success: false, message: err.message },
+        { status: err.status && err.status >= 400 && err.status < 600 ? err.status : 502 }
+      );
     }
     // Forward upstream Anthropic / Granola HTTP errors with their real status
     // + message so the UI shows the actual failure instead of "Extraction failed."

@@ -61,6 +61,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     markSent?: boolean;
     granolaNoteId?: string;
     granolaNoteUrl?: string;
+    /** Full or partial brief content to persist into the formData JSON. */
+    formData?: Partial<FormData>;
   };
   try {
     body = await req.json();
@@ -84,18 +86,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (typeof body.granolaNoteId === "string") patch.granolaNoteId = body.granolaNoteId.trim();
   if (typeof body.granolaNoteUrl === "string") patch.granolaNoteUrl = body.granolaNoteUrl.trim();
 
-  // If the admin is changing any of the top-level contact/company columns,
-  // mirror the new values into the brief's formData JSON so the prospect
-  // sees them pre-filled when they next open /form?token=...
+  // We need to touch the brief's formData JSON when EITHER:
+  //   - the admin edited the full brief content (body.formData), or
+  //   - the admin changed a top-level contact/company column, which we mirror
+  //     into formData so the prospect sees it pre-filled at /form?token=...
   // No round trip when only adminNotes / status / granolaNote* change.
+  const isFormDataUpdate =
+    body.formData != null && typeof body.formData === "object" && !Array.isArray(body.formData);
   const isCompanyNameUpdate = typeof body.companyName === "string";
   const isProspectNameUpdate = typeof body.prospectName === "string";
   const isProspectEmailUpdate = typeof body.prospectEmail === "string";
-  if (isCompanyNameUpdate || isProspectNameUpdate || isProspectEmailUpdate) {
+  if (isFormDataUpdate || isCompanyNameUpdate || isProspectNameUpdate || isProspectEmailUpdate) {
     try {
       const current = await getBriefById(params.id);
       if (current) {
-        const nextFormData: FormData = { ...current.formData };
+        // Base = existing formData, overlaid with the admin's edited formData,
+        // then top-level contact/company mirrors win last so the columns and
+        // JSON never drift apart.
+        const nextFormData: FormData = {
+          ...current.formData,
+          ...(isFormDataUpdate ? (body.formData as Partial<FormData>) : {}),
+        };
         if (isCompanyNameUpdate) {
           nextFormData.companyName = patch.companyName ?? "";
         }
@@ -110,7 +121,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     } catch (err) {
       // Don't block the save on a mirror failure — log and continue.
       console.warn(
-        "[/api/admin/briefs/[id]] failed to mirror top-level fields into formData:",
+        "[/api/admin/briefs/[id]] failed to merge formData:",
         err
       );
     }
