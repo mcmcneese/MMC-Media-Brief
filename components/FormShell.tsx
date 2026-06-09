@@ -43,34 +43,55 @@ export default function FormShell({
   const [chromeVisible, setChromeVisible] = useState<boolean>(!heroPresent);
 
   useEffect(() => {
+    // Steps without a hero (2+): chrome (incl. the Continue button) is
+    // always visible from page load.
     if (!heroPresent) {
       setChromeVisible(true);
       return;
     }
-    setChromeVisible(false);
+
     const target = formAnchorRef?.current;
-    if (!target) return;
+
+    // Fail-safe: if the anchor can't be measured or there's no window to
+    // listen on, SHOW the chrome. The Continue button must always be
+    // reachable — never leave it hidden because a reveal hook failed to
+    // attach. (This was the cause of Continue disappearing on the hero.)
+    if (!target || typeof window === "undefined") {
+      setChromeVisible(true);
+      return;
+    }
+
+    setChromeVisible(false);
 
     let raf: number | null = null;
-    function check() {
+    const check = () => {
       raf = null;
-      if (!target) return;
       const rect = target.getBoundingClientRect();
-      // Show as soon as the form anchor is approaching the top of the viewport.
-      setChromeVisible(rect.top < 100);
-    }
-    function onScroll() {
+      // Reveal once the form anchor reaches the top region of the viewport
+      // (the prospect has scrolled past, or been scrolled past, the
+      // full-bleed hero). Reveal is one-way: once shown we keep it shown,
+      // so Continue can never vanish mid-form.
+      if (rect.top < 100) setChromeVisible(true);
+    };
+    const onScroll = () => {
       if (raf !== null) return;
       raf = requestAnimationFrame(check);
-    }
+    };
 
     check();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+
+    // Last-resort safety net: if no scroll/resize ever fires (short
+    // viewports, programmatic flows, assistive tech, odd browsers), reveal
+    // the chrome anyway after a short delay so Continue is always clickable.
+    const fallback = window.setTimeout(() => setChromeVisible(true), 3000);
+
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf !== null) cancelAnimationFrame(raf);
+      window.clearTimeout(fallback);
     };
   }, [heroPresent, formAnchorRef]);
 
