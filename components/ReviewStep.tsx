@@ -1,11 +1,23 @@
 "use client";
 
 import type { FormData, MultiSelectValue, StepIndex } from "@/lib/types";
+import { FIELD_LABELS } from "@/lib/schema";
 
 interface Props {
   data: FormData;
   onEdit: (step: StepIndex) => void;
+  /** Map of content step index → list of incomplete required field keys. */
+  incompleteByStep: Record<number, string[]>;
 }
+
+// Section titles keyed by step index, matching the headings used below.
+const STEP_TITLES: Record<number, string> = {
+  0: "Contact",
+  1: "Section 1 — Company Information",
+  2: "Section 2 — Audience Details",
+  3: "Section 3 — Past and Present Paid Media",
+  4: "Section 4 — MMC Campaign Set Up",
+};
 
 function fmtCurrency(n: number | null): string {
   if (n === null || n === undefined || Number.isNaN(n)) return "—";
@@ -67,9 +79,60 @@ function Section({
   );
 }
 
-export default function ReviewStep({ data, onEdit }: Props) {
+export default function ReviewStep({ data, onEdit, incompleteByStep }: Props) {
+  const incompleteEntries = Object.entries(incompleteByStep)
+    .map(([k, fields]) => [Number(k), fields] as [number, string[]])
+    .filter(([, fields]) => fields.length > 0)
+    .sort((a, b) => a[0] - b[0]);
+
   return (
     <div>
+      {incompleteEntries.length > 0 ? (
+        <div
+          id="incomplete-reminder"
+          className="mb-6 rounded-lg border border-mmc-gold/60 bg-mmc-gold/10 p-4"
+        >
+          <h2 className="text-sm font-semibold text-mmc-purple">
+            A few required details are still incomplete
+          </h2>
+          <p className="mt-1 text-xs text-mmc-muted">
+            You can complete these in any order. Nothing is locked — jump to any section, fill in
+            what is missing, and come back to submit.
+          </p>
+          <ul className="mt-3 space-y-3">
+            {incompleteEntries.map(([stepIdx, fields]) => (
+              <li
+                key={stepIdx}
+                className="flex items-start justify-between gap-3 border-t border-mmc-gold/30 pt-3 first:border-t-0 first:pt-0"
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-mmc-text">
+                    {STEP_TITLES[stepIdx] ?? `Section ${stepIdx}`}
+                  </p>
+                  <p className="mt-0.5 text-sm text-mmc-text">
+                    {fields.map((f) => FIELD_LABELS[f] ?? f).join(", ")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onEdit(stepIdx as StepIndex)}
+                  className="flex-none rounded-md border border-mmc-gold bg-white px-3 py-1.5 text-xs font-semibold text-mmc-purple transition hover:bg-mmc-gold/10"
+                >
+                  Go to section
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div
+          id="incomplete-reminder"
+          className="mb-6 rounded-lg border border-mmc-border bg-mmc-creamDeep/40 p-4 text-sm text-mmc-text"
+        >
+          Everything looks complete. You&#39;re ready to submit.
+        </div>
+      )}
+
       <p className="mb-6 text-sm text-mmc-muted">
         Please review the details below. Use the Edit links to jump back and make changes — your
         data is preserved.

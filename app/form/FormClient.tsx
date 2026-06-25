@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import FormShell from "@/components/FormShell";
 import Hero from "@/components/Hero";
@@ -12,7 +12,7 @@ import Section3PaidMedia from "@/components/Section3PaidMedia";
 import Section4Campaign from "@/components/Section4Campaign";
 import ReviewStep from "@/components/ReviewStep";
 import { EMPTY_FORM_DATA, STEPS, type FormData, type StepIndex } from "@/lib/types";
-import { fullSchema, STEP_FIELDS } from "@/lib/schema";
+import { fullSchema, incompleteFieldsByStep } from "@/lib/schema";
 import {
   clearDraft,
   isUnlocked,
@@ -61,7 +61,6 @@ export default function FormClient({
     initialData ? { ...EMPTY_FORM_DATA, ...initialData } : EMPTY_FORM_DATA
   );
   const [step, setStep] = useState<StepIndex>(0);
-  const [maxVisitedStep, setMaxVisitedStep] = useState<StepIndex>(0);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [shakeKey, setShakeKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -93,7 +92,6 @@ export default function FormClient({
     const savedStep = loadStep();
     if (savedStep >= 0 && savedStep <= 5) {
       setStep(savedStep);
-      setMaxVisitedStep(savedStep);
     }
     setReady(true);
   }, [router, hasToken]);
@@ -127,54 +125,14 @@ export default function FormClient({
     });
   }, []);
 
-  const validateStep = useCallback(
-    (current: StepIndex): boolean => {
-      const result = fullSchema.safeParse(data);
-      if (result.success) {
-        setErrors({});
-        return true;
-      }
-      const relevant = new Set<string>(STEP_FIELDS[current] ?? []);
-      if (current === 3 && data.hasAdvertised === "No") {
-        ["pastVendors", "whatWorked", "whatDidntWork", "pastGeo", "pastCreative", "pastGoal"].forEach(
-          (k) => relevant.delete(k)
-        );
-      }
-      const nextErrors: Partial<Record<keyof FormData, string>> = {};
-      for (const issue of result.error.issues) {
-        const key = String(issue.path[0] ?? "") as keyof FormData;
-        if (!key) continue;
-        if (!relevant.has(key as string)) continue;
-        if (!nextErrors[key]) nextErrors[key] = issue.message;
-      }
-      setErrors(nextErrors);
-      return Object.keys(nextErrors).length === 0;
-    },
-    [data]
-  );
-
-  const focusFirstError = () => {
-    setTimeout(() => {
-      const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
-      if (el) {
-        const wrap = el.closest<HTMLElement>("[data-field]") ?? el;
-        wrap.scrollIntoView({ behavior: "smooth", block: "center" });
-        if ("focus" in el && typeof (el as HTMLInputElement).focus === "function") {
-          try {
-            (el as HTMLInputElement).focus({ preventScroll: true });
-          } catch {
-            /* noop */
-          }
-        }
-      }
-      setShakeKey((k) => k + 1);
-    }, 0);
-  };
+  // Non-blocking completeness: which content sections still have required
+  // fields missing. Navigation is never gated on this — it only drives the
+  // sidebar status markers and the pre-submit reminder on the Review step.
+  const incompleteByStep = useMemo(() => incompleteFieldsByStep(data), [data]);
 
   const advanceToStep = useCallback(
     (target: StepIndex) => {
       setStep(target);
-      setMaxVisitedStep((prev) => (target > prev ? target : prev));
       setTimeout(() => scrollToForm("smooth"), 0);
     },
     [scrollToForm]
@@ -185,10 +143,7 @@ export default function FormClient({
       void submit();
       return;
     }
-    if (!validateStep(step)) {
-      focusFirstError();
-      return;
-    }
+    // Free navigation: advancing is never blocked on completion.
     advanceToStep(Math.min(5, step + 1) as StepIndex);
   };
 
@@ -196,8 +151,8 @@ export default function FormClient({
     advanceToStep(Math.max(0, step - 1) as StepIndex);
   };
 
+  // Jump to ANY section at any time, regardless of completion.
   const jumpTo = (target: StepIndex) => {
-    if (target > maxVisitedStep) return;
     advanceToStep(target);
   };
 
@@ -205,16 +160,35 @@ export default function FormClient({
     setSubmitError("");
     const result = fullSchema.safeParse(data);
     if (!result.success) {
-      const firstIssue = result.error.issues[0];
-      const errKey = String(firstIssue.path[0] ?? "");
-      const stepWithField = STEP_FIELDS.findIndex((fields) => fields.includes(errKey));
-      const target = (stepWithField >= 0 ? stepWithField : 0) as StepIndex;
-      setStep(target);
+      // Non-blocking philosophy: don't yank the prospect around. Keep them on
+      // the Review step, highlight every incomplete field (so markers are in
+      // place when they jump into a section), and surface the reminder panel.
+      const allErrors: Partial<Record<keyof FormData, string>> = {};
+      const skipPastMedia = data.hasAdvertised === "No";
+      const pastMediaFields = [
+        "pastVendors",
+        "whatWorked",
+        "whatDidntWork",
+        "pastGeo",
+        "pastCreative",
+        "pastGoal",
+      ];
+      for (const issue of result.error.issues) {
+        const key = String(issue.path[0] ?? "") as keyof FormData;
+        if (!key) continue;
+        if (skipPastMedia && pastMediaFields.includes(key as string)) continue;
+        if (!allErrors[key]) allErrors[key] = issue.message;
+      }
+      setErrors(allErrors);
+      setStep(5);
+      setSubmitError(
+        "Some required details are still incomplete. Complete the highlighted items below, then submit. Nothing is locked — you can jump to any section."
+      );
       setTimeout(() => {
-        validateStep(target);
-        focusFirstError();
+        const panel = document.getElementById("incomplete-reminder");
+        if (panel) panel.scrollIntoView({ behavior: "smooth", block: "center" });
+        setShakeKey((k) => k + 1);
       }, 0);
-      setSubmitError("Please fix the highlighted fields before submitting.");
       return;
     }
     setSubmitting(true);
@@ -297,8 +271,8 @@ export default function FormClient({
       sidebar={
         <Sidebar
           currentStep={step}
-          maxVisitedStep={maxVisitedStep}
           onJump={jumpTo}
+          incompleteSteps={Object.keys(incompleteByStep).map(Number)}
         />
       }
     >
@@ -307,7 +281,9 @@ export default function FormClient({
       {step === 2 && <Section2Audience {...stepProps} />}
       {step === 3 && <Section3PaidMedia {...stepProps} />}
       {step === 4 && <Section4Campaign {...stepProps} />}
-      {step === 5 && <ReviewStep data={data} onEdit={jumpTo} />}
+      {step === 5 && (
+        <ReviewStep data={data} onEdit={jumpTo} incompleteByStep={incompleteByStep} />
+      )}
 
       {submitError ? (
         <div

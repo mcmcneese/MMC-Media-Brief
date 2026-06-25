@@ -213,4 +213,84 @@ export const STEP_FIELDS: string[][] = [
   [], // Review — no new fields
 ];
 
+// Human-readable labels for required fields. Used by the pre-submit
+// completeness reminder so prospects see friendly names, not field keys.
+export const FIELD_LABELS: Record<string, string> = {
+  contactName: "Primary Contact Name",
+  contactEmail: "Primary Contact Email",
+  companyName: "Company Name",
+  companyWebsite: "Company Website",
+  companyDescription: "Company Description",
+  usp: "Unique Selling Proposition",
+  differentiators: "Market Differentiators",
+  competitor1: "Top Competitor 1",
+  competitor2: "Top Competitor 2",
+  competitor3: "Top Competitor 3",
+  pricing: "Pricing",
+  availability: "Availability",
+  regulations: "Advertising Regulations",
+  ltv: "Current LTV (or goal LTV)",
+  targetConsumer: "Target Consumer",
+  businessType: "Business Type",
+  geographicFocus: "Geographic Focus",
+  interestsAndHabits: "Interests and Purchase Habits",
+  additionalPersonas: "Additional Personas",
+  hasAdvertised: "Have you advertised in the past?",
+  pastVendors: "Past Vendors / Spend",
+  whatWorked: "What Worked Well",
+  whatDidntWork: "What Didn't Work",
+  pastGeo: "Geography",
+  pastCreative: "Creative Formats Used",
+  pastGoal: "Goal of Past Media",
+  primaryGoal: "Primary Campaign Goal",
+  kpis: "KPIs",
+  successDefinition: "Definition of Success",
+  trackingTech: "Tracking Technology",
+  seasonality: "Seasonality",
+  channelPreferences: "Channel Preferences",
+  startDate: "Start Date",
+  endDate: "End Date",
+  budget: "Ideal Budget",
+  hasTVCommercial: "TV Commercial Available",
+  hasDisplayAds: "Display Ads Available",
+};
+
+// Returns, per content-step index (0–4), the list of required field keys that
+// are still incomplete. An empty object means the whole brief validates.
+// This is purely informational: navigation is NEVER gated on it. It powers
+// the sidebar status markers and the pre-submit reminder on the Review step.
+export function incompleteFieldsByStep(data: unknown): Record<number, string[]> {
+  const result = fullSchema.safeParse(data);
+  const out: Record<number, string[]> = {};
+  if (result.success) return out;
+
+  const hasAdvertised =
+    typeof data === "object" && data !== null
+      ? (data as { hasAdvertised?: string }).hasAdvertised
+      : undefined;
+  const pastMediaFields = [
+    "pastVendors",
+    "whatWorked",
+    "whatDidntWork",
+    "pastGeo",
+    "pastCreative",
+    "pastGoal",
+  ];
+
+  for (const issue of result.error.issues) {
+    const key = String(issue.path[0] ?? "");
+    if (!key) continue;
+    const stepIdx = STEP_FIELDS.findIndex((fields) => fields.includes(key));
+    if (stepIdx < 0) continue;
+    // Mirror the conditional logic: if the prospect hasn't advertised, the
+    // past-media detail fields are not required.
+    if (stepIdx === 3 && hasAdvertised === "No" && pastMediaFields.includes(key)) {
+      continue;
+    }
+    if (!out[stepIdx]) out[stepIdx] = [];
+    if (!out[stepIdx].includes(key)) out[stepIdx].push(key);
+  }
+  return out;
+}
+
 export type FullSchema = z.infer<typeof fullSchema>;

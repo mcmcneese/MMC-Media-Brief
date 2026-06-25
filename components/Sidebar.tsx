@@ -5,8 +5,9 @@ import type { StepIndex } from "@/lib/types";
 
 interface SidebarProps {
   currentStep: StepIndex;
-  maxVisitedStep: StepIndex;
   onJump: (step: StepIndex) => void;
+  /** Content step indices (0–4) that still have required fields missing. */
+  incompleteSteps: number[];
 }
 
 // Short labels for the sidebar; full titles appear on each step page.
@@ -19,7 +20,7 @@ const STEP_LABELS = [
   "Review",
 ] as const;
 
-export default function Sidebar({ currentStep, maxVisitedStep, onJump }: SidebarProps) {
+export default function Sidebar({ currentStep, onJump, incompleteSteps }: SidebarProps) {
   return (
     <nav aria-label="Brief progress" className="sticky top-24">
       <p className="mmc-kicker mb-4 px-1">Your Brief</p>
@@ -28,39 +29,30 @@ export default function Sidebar({ currentStep, maxVisitedStep, onJump }: Sidebar
           const i = idx as StepIndex;
           const num = String(idx + 1).padStart(2, "0");
           const isCurrent = i === currentStep;
-          const isVisited = i <= maxVisitedStep;
-          const isCompleted = i < currentStep && isVisited;
-          const isClickable = isVisited;
+          // A content section (0–4) is complete when none of its required
+          // fields are missing. The Review step (5) never shows a marker.
+          const isComplete = idx <= 4 && !incompleteSteps.includes(idx);
           const isLast = idx === STEP_LABELS.length - 1;
 
           // Number color/state
           const numClass = isCurrent
             ? "text-mmc-gold"
-            : isVisited
+            : isComplete
             ? "text-mmc-gold/80"
-            : "text-mmc-border";
+            : "text-mmc-muted";
 
           // Label color/state
           const labelClass = isCurrent
             ? "text-mmc-purple font-semibold"
-            : isVisited
-            ? "text-mmc-text"
-            : "text-mmc-muted";
+            : "text-mmc-text";
 
           return (
             <li key={label} className={isLast ? "" : "border-b border-mmc-border/60"}>
               <button
                 type="button"
-                onClick={() => {
-                  if (isClickable) onJump(i);
-                }}
-                disabled={!isClickable}
+                onClick={() => onJump(i)}
                 aria-current={isCurrent ? "step" : undefined}
-                className={`group flex w-full items-center gap-4 py-3.5 text-left transition ${
-                  isClickable
-                    ? "hover:bg-mmc-creamDeep/40 px-2 -mx-2 rounded-sm cursor-pointer"
-                    : "px-2 -mx-2 cursor-not-allowed"
-                }`}
+                className="group flex w-full items-center gap-4 py-3.5 px-2 -mx-2 rounded-sm text-left transition cursor-pointer hover:bg-mmc-creamDeep/40"
               >
                 <span
                   aria-hidden="true"
@@ -73,7 +65,7 @@ export default function Sidebar({ currentStep, maxVisitedStep, onJump }: Sidebar
                 <span className={`flex-1 text-sm leading-tight ${labelClass}`}>
                   {label}
                 </span>
-                {isCompleted ? (
+                {isComplete ? (
                   <Check
                     size={16}
                     strokeWidth={2.5}
