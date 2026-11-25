@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 interface FormPageProps {
-  searchParams: { token?: string | string[] };
+  searchParams: { token?: string | string[]; preview?: string | string[] };
 }
 
 export default async function FormPage({ searchParams }: FormPageProps) {
@@ -82,6 +82,7 @@ export default async function FormPage({ searchParams }: FormPageProps) {
       initialData={brief.draft ? { ...brief.formData, ...brief.draft.data } : brief.formData}
       initialStep={brief.draft ? brief.draft.step : 0}
       briefToken={brief.token}
+      preview={searchParams.preview !== undefined}
       prospectCompanyName={brief.companyName || undefined}
     />
   );

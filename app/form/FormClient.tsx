@@ -25,6 +25,8 @@ export interface FormClientProps {
   initialData?: FormData;
   /** The step the company was on when their progress was last saved. */
   initialStep?: number;
+  /** A look at the brief by the team: nothing is tracked, saved or submitted. */
+  preview?: boolean;
   /**
    * The brief token (Airtable record identifier) for the prospect.
    * When provided, submission updates that Airtable record instead of just
@@ -41,6 +43,7 @@ export interface FormClientProps {
 export default function FormClient({
   initialData,
   initialStep,
+  preview = false,
   briefToken,
   prospectCompanyName,
 }: FormClientProps) {
@@ -92,9 +95,9 @@ export default function FormClient({
 
   // First open, recorded from the browser so link previews do not count.
   useEffect(() => {
-    if (!hasToken) return;
+    if (!hasToken || preview) return;
     void post({ event: "opened" });
-  }, [hasToken, post]);
+  }, [hasToken, preview, post]);
 
   // Save shortly after the company changes an answer or moves section, and
   // once more as they leave the page. Nothing is saved until they change
@@ -104,7 +107,7 @@ export default function FormClient({
   latest.current = { data, step };
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!ready || !hasToken || !dirty.current) return;
+    if (!ready || !hasToken || preview || !dirty.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       void post({ event: "save", data, step });
@@ -112,17 +115,17 @@ export default function FormClient({
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [data, step, ready, hasToken, post]);
+  }, [data, step, ready, hasToken, preview, post]);
 
   useEffect(() => {
-    if (!hasToken) return;
+    if (!hasToken || preview) return;
     const flush = () => {
       if (!dirty.current || submitted.current) return;
       void post({ event: "save", data: latest.current.data, step: latest.current.step }, true);
     };
     window.addEventListener("pagehide", flush);
     return () => window.removeEventListener("pagehide", flush);
-  }, [hasToken, post]);
+  }, [hasToken, preview, post]);
 
 
   const setField = useCallback(<K extends keyof FormData>(key: K, value: FormData[K]) => {
@@ -168,6 +171,10 @@ export default function FormClient({
   };
 
   const submit = async () => {
+    if (preview) {
+      setSubmitError("This is a preview. Nothing is saved or submitted from here.");
+      return;
+    }
     setSubmitError("");
     const result = fullSchema.safeParse(data);
     if (!result.success) {

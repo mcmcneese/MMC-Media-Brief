@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBriefByToken, isAirtableConfigured, updateBrief, type UpdateBriefInput } from "@/lib/airtable";
-import { EMPTY_FORM_DATA, type FormData } from "@/lib/types";
+import { cleanAnswers } from "@/lib/brief-fields";
 
 // Tracks a company's progress on its own brief: the first open, the first
 // change, and saved answers. Every call needs the brief's personal token.
@@ -8,32 +8,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 200_000;
-const MAX_TEXT = 20_000;
 
 function refuse(status: number, message: string) {
   return NextResponse.json({ success: false, message }, { status });
-}
-
-/** Keep only known form fields, with the same shape the form itself uses. */
-function cleanData(raw: unknown): Partial<FormData> {
-  const out: Record<string, unknown> = {};
-  if (!raw || typeof raw !== "object") return out as Partial<FormData>;
-  const input = raw as Record<string, unknown>;
-  for (const key of Object.keys(EMPTY_FORM_DATA) as (keyof FormData)[]) {
-    if (!(key in input)) continue;
-    const empty = EMPTY_FORM_DATA[key] as unknown;
-    const value = input[key];
-    if (Array.isArray(empty)) {
-      if (Array.isArray(value)) {
-        out[key] = value.filter((v) => typeof v === "string").slice(0, 100).map((v) => (v as string).slice(0, 500));
-      }
-    } else if (typeof empty === "string") {
-      if (typeof value === "string") out[key] = value.slice(0, MAX_TEXT);
-    } else if (typeof value === typeof empty) {
-      out[key] = value;
-    }
-  }
-  return out as Partial<FormData>;
 }
 
 export async function POST(req: NextRequest) {
@@ -73,7 +50,7 @@ export async function POST(req: NextRequest) {
 
   if (event === "save") {
     const step = typeof body.step === "number" && body.step >= 0 && body.step <= 5 ? Math.floor(body.step) : 0;
-    update.draft = { data: cleanData(body.data), step, savedAt: now };
+    update.draft = { data: cleanAnswers(body.data), step, savedAt: now };
     if (sent && !brief.startedAt) update.startedAt = now;
   }
 
