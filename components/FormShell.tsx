@@ -1,207 +1,126 @@
 "use client";
 
-import { ReactNode, RefObject, useEffect, useState } from "react";
-import MMCLogo from "./MMCLogo";
-import ProgressBar from "./ProgressBar";
+import { ReactNode } from "react";
+import TalariaLockup, { TalariaBands } from "./TalariaLockup";
 import { STEPS } from "@/lib/types";
 
 interface FormShellProps {
   step: number;
   title: string;
-  kicker?: string;
+  intro?: string;
+  /** "Saved 10:02 AM", or empty before the first save. */
+  savedLabel?: string;
+  /** Steps that still have a required answer missing. */
+  incompleteSteps?: number[];
+  onJump: (step: number) => void;
   onBack?: () => void;
   onNext: () => void;
-  backLabel?: string;
+  onSaveExit?: () => void;
   nextLabel: string;
   isSubmitting?: boolean;
-  hero?: ReactNode;
-  sidebar?: ReactNode;
-  formAnchorRef?: RefObject<HTMLDivElement>;
   children: ReactNode;
 }
 
 export default function FormShell({
   step,
   title,
-  kicker,
+  intro,
+  savedLabel = "",
+  incompleteSteps = [],
+  onJump,
   onBack,
   onNext,
-  backLabel = "Back",
+  onSaveExit,
   nextLabel,
   isSubmitting = false,
-  hero,
-  sidebar,
-  formAnchorRef,
   children,
 }: FormShellProps) {
-  // When the hero is shown (Step 1), hide BOTH the top header AND the
-  // sticky footer until the prospect has scrolled past the hero (or clicks
-  // Begin Brief, which triggers a scroll). Eliminates the redundant logo,
-  // gives the hero the full viewport so Begin CTA stays above the fold,
-  // and avoids competing with Begin by showing Back/Continue at the bottom.
-  const heroPresent = Boolean(hero);
-  const [chromeVisible, setChromeVisible] = useState<boolean>(!heroPresent);
-
-  useEffect(() => {
-    // Steps without a hero (2+): chrome (incl. the Continue button) is
-    // always visible from page load.
-    if (!heroPresent) {
-      setChromeVisible(true);
-      return;
-    }
-
-    const target = formAnchorRef?.current;
-
-    // Fail-safe: if the anchor can't be measured or there's no window to
-    // listen on, SHOW the chrome. The Continue button must always be
-    // reachable — never leave it hidden because a reveal hook failed to
-    // attach. (This was the cause of Continue disappearing on the hero.)
-    if (!target || typeof window === "undefined") {
-      setChromeVisible(true);
-      return;
-    }
-
-    setChromeVisible(false);
-
-    let raf: number | null = null;
-    const check = () => {
-      raf = null;
-      const rect = target.getBoundingClientRect();
-      // Reveal once the form anchor reaches the top region of the viewport
-      // (the prospect has scrolled past, or been scrolled past, the
-      // full-bleed hero). Reveal is one-way: once shown we keep it shown,
-      // so Continue can never vanish mid-form.
-      if (rect.top < 100) setChromeVisible(true);
-    };
-    const onScroll = () => {
-      if (raf !== null) return;
-      raf = requestAnimationFrame(check);
-    };
-
-    check();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-
-    // Last-resort safety net: if no scroll/resize ever fires (short
-    // viewports, programmatic flows, assistive tech, odd browsers), reveal
-    // the chrome anyway after a short delay so Continue is always clickable.
-    const fallback = window.setTimeout(() => setChromeVisible(true), 3000);
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (raf !== null) cancelAnimationFrame(raf);
-      window.clearTimeout(fallback);
-    };
-  }, [heroPresent, formAnchorRef]);
-
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Top header — fixed (out of document flow) so it can be visually
-          hidden during the hero without leaving a 64px gap above it. */}
-      <header
-        aria-hidden={!chromeVisible}
-        className={`fixed top-0 left-0 right-0 z-20 w-full border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md transition-[transform,opacity] duration-300 ease-out ${
-          chromeVisible
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none -translate-y-full opacity-0"
-        }`}
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
-          <div className="flex items-center gap-3">
-            <MMCLogo height={64} priority />
-          </div>
-          <div className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-mmc-gold md:block">
-            Media Brief
-          </div>
-          <div className="text-xs font-medium uppercase tracking-wider text-mmc-muted sm:text-sm">
-            Step {step + 1} of {STEPS.length}
-          </div>
-        </div>
-        <ProgressBar step={step} />
+    <div className="flex min-h-screen flex-col items-center px-4">
+      <header className="flex w-full max-w-[760px] items-end gap-4 pb-[22px] pt-9">
+        <TalariaLockup />
+        <span className="flex-grow" />
+        <span className="text-[15px] font-semibold">Media brief</span>
       </header>
 
-      {/* Hero (only on first step) — sits flush with the top of the body
-          because the header is `fixed` and starts offscreen. */}
-      {hero}
-
-      {/* Anchor for scroll-into-view from the hero CTA */}
-      <div ref={formAnchorRef} aria-hidden="true" />
-
-      {/* Main: sidebar + form card. pt-20 reserves space under the fixed
-          header (~76px = header bar + progress bar) so titles never hide
-          behind it once the header slides into view. */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-20 sm:px-8">
-        <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
-          {sidebar ? (
-            <aside className="hidden lg:block lg:pt-10" aria-label="Brief navigation">
-              {sidebar}
-            </aside>
-          ) : null}
-
-          <div className="pt-8 sm:pt-10">
-            {/* Kicker + big purple H1 + gold rule (deck style) */}
-            <div className="mb-6 sm:mb-8">
-              {kicker ? <div className="mmc-kicker mb-3">{kicker}</div> : null}
-              <h2 className="text-3xl font-bold tracking-tight text-mmc-purple sm:text-4xl">
-                {title}
-              </h2>
-              <span className="mmc-rule mt-4" />
-            </div>
-
-            {/* White form card */}
-            <div className="rounded-lg border border-mmc-border bg-white p-5 shadow-[0_1px_2px_rgba(42,18,48,0.04),0_8px_24px_-8px_rgba(42,18,48,0.12)] sm:p-8">
-              {children}
-            </div>
+      <main className="flex w-full max-w-[760px] flex-col gap-5 rounded-3xl bg-white px-5 py-7 sm:px-9 sm:py-8">
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="tl-label">
+              Step {step + 1} of {STEPS.length}
+            </span>
+            <span className="flex-grow" />
+            <span className="tl-label !text-mmc-muted" aria-live="polite">
+              {savedLabel}
+            </span>
           </div>
+          {/* Each bar is a step. Any step can be opened at any time. */}
+          <nav aria-label="Brief sections" className="flex gap-1.5">
+            {STEPS.map((s) => {
+              const done = s.index < step || (s.index !== step && !incompleteSteps.includes(s.index) && s.index < STEPS.length - 1 && step > s.index);
+              const here = s.index === step;
+              return (
+                <button
+                  key={s.index}
+                  type="button"
+                  onClick={() => onJump(s.index)}
+                  aria-current={here ? "step" : undefined}
+                  aria-label={`${s.name}${here ? ", current section" : ""}`}
+                  title={s.name}
+                  className="group flex h-5 flex-1 items-center focus:outline-none"
+                >
+                  <span
+                    className={`block h-2 w-full rounded transition group-hover:opacity-80 group-focus-visible:ring-2 group-focus-visible:ring-mmc-gold group-focus-visible:ring-offset-2 ${
+                      done || here ? "bg-[#8EDCD7]" : "bg-[#ECEEF1]"
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </nav>
         </div>
-      </main>
 
-      {/* Sticky footer — compact. Hides in lockstep with the header while
-          the prospect is on the full-bleed hero, so Begin Brief is the
-          only CTA visible. Slides up into view alongside the header once
-          they scroll past or click Begin. */}
-      <footer
-        aria-hidden={!chromeVisible}
-        className={`fixed bottom-0 left-0 right-0 z-20 border-t border-mmc-border/70 bg-mmc-cream/90 backdrop-blur-md transition-[transform,opacity] duration-300 ease-out ${
-          chromeVisible
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-full opacity-0"
-        }`}
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:px-8">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.02em]">{title}</h1>
+          {intro ? <p className="text-[15px] text-mmc-muted">{intro}</p> : null}
+        </div>
+
+        {children}
+
+        <div className="flex flex-wrap items-center gap-2.5 pt-1">
           {onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              disabled={isSubmitting}
-              className="rounded-md border border-mmc-border bg-white/60 px-3.5 py-1.5 text-xs font-medium text-mmc-text transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-50"
-            >
-              {backLabel}
+            <button type="button" onClick={onBack} disabled={isSubmitting} className="tl-btn">
+              Back
             </button>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-1.5 rounded-md bg-mmc-purple px-5 py-1.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-mmc-cream disabled:opacity-60"
-          >
+          ) : null}
+          <span className="flex-grow" />
+          {onSaveExit ? (
+            <button type="button" onClick={onSaveExit} disabled={isSubmitting} className="tl-btn">
+              Save and exit
+            </button>
+          ) : null}
+          <button type="button" onClick={onNext} disabled={isSubmitting} className="tl-btn tl-btn-primary">
             {isSubmitting ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  aria-hidden="true"
-                  className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                />
-                Submitting…
-              </span>
+              <>
+                <span aria-hidden="true" className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                Submitting
+              </>
             ) : (
-              nextLabel
+              <>
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                  <path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z" />
+                </svg>
+                {nextLabel}
+              </>
             )}
           </button>
         </div>
-      </footer>
+      </main>
+
+      <div className="w-full flex-grow" />
+      <div className="-mx-4 w-[calc(100%+2rem)]">
+        <TalariaBands />
+      </div>
     </div>
   );
 }

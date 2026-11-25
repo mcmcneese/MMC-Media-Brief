@@ -9,36 +9,30 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Token names are kept from the original theme so components need no
+        // change; the values are the Talaria palette.
         mmc: {
-          // Brand
-          purple: "#5D2B5E",      // primary brand purple (H1s, primary CTAs)
-          purpleDeep: "#3A1A3D",  // mid-tone for gradients
-          purpleDark: "#2A1230",  // darkest, gradient anchor
-          gold: "#B89043",        // brand gold (numbers, rules, kicker labels, hero CTA)
-          goldLight: "#D4B370",   // hover / highlight states
-
-          // Surfaces
-          cream: "#F5F2EC",       // warm off-white background
-          creamDeep: "#E8E3D7",   // accent cream
+          purple: "#111111",      // ink: headings, primary buttons
+          purpleDeep: "#111111",
+          purpleDark: "#111111",
+          gold: "#2E9A94",        // deep aqua: focus rings, small accents
+          goldLight: "#8EDCD7",   // aqua
+          cream: "#F4F5F7",       // page ground
+          creamDeep: "#ECEEF1",
           white: "#FFFFFF",
-
-          // Text
-          text: "#2A2A2A",        // charcoal body
-          muted: "#6B6B6B",       // helper text, labels
-
-          // Utility
-          border: "#E0DACD",      // warm grey border
-          error: "#B91C1C",
-          success: "#15803D",
-
-          // Legacy aliases kept for any existing class refs
-          dark: "#2A2A2A",        // mapped to charcoal
-          accent: "#B89043",      // mapped to gold
-          bg: "#F5F2EC",          // mapped to cream
+          text: "#111111",
+          muted: "#5A606B",
+          border: "#C9CDD3",
+          error: "#B3261E",
+          success: "#2E9A94",
+          dark: "#111111",
+          accent: "#111111",
+          bg: "#F4F5F7",
         },
       },
       fontFamily: {
-        sans: ["var(--font-montserrat)", "Montserrat", "sans-serif"],
+        sans: ["Geist", "system-ui", "sans-serif"],
+        mono: ["Geist Mono", "ui-monospace", "monospace"],
       },
     },
   },

@@ -13,8 +13,8 @@ import {
   type BriefRecord,
   type UpdateBriefInput,
 } from "./airtable";
-import { getProductionUrl } from "./config";
-import { EMPTY_FORM_DATA, type FormData } from "./types";
+import { FIELD_COUNT, FIELDS, SECTIONS, cleanAnswers, countAnswered } from "./brief-fields";
+import { CONFIG, getProductionUrl } from "./config";
 
 export type Stage = "Created" | "Sent" | "Opened" | "Started" | "Submitted" | "Expired";
 
@@ -27,15 +27,6 @@ export function stageOf(b: BriefRecord): Stage {
 
 function linkOf(b: BriefRecord): string {
   return b.token ? `${getProductionUrl().replace(/\/$/, "")}/form?token=${encodeURIComponent(b.token)}` : "";
-}
-
-function answered(data: Partial<FormData>): number {
-  let n = 0;
-  for (const key of Object.keys(EMPTY_FORM_DATA) as (keyof FormData)[]) {
-    const v = data[key] as unknown;
-    if (Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim().length > 0 : Boolean(v)) n++;
-  }
-  return n;
 }
 
 function summary(b: BriefRecord) {
@@ -62,35 +53,20 @@ function detail(b: BriefRecord) {
   const current = b.draft ? { ...b.formData, ...b.draft.data } : b.formData;
   return {
     ...summary(b),
-    fieldsTotal: Object.keys(EMPTY_FORM_DATA).length,
-    fieldsPrefilled: answered(b.formData),
-    fieldsAnswered: answered(current),
+    previewLink: linkOf(b) ? `${linkOf(b)}&preview=1` : "",
+    fieldsTotal: FIELD_COUNT,
+    fieldsPrefilled: countAnswered(b.formData),
+    fieldsAnswered: countAnswered(current),
+    sections: SECTIONS,
+    fields: FIELDS,
+    // Who is emailed when the company submits.
+    emailedWhenSubmitted: [...CONFIG.EMAIL.mmcRecipients],
     // What the team entered before sending (or the final answers once Submitted).
     answers: b.formData,
     // What the company has saved so far, before submitting. Null until they start.
     companyProgress: b.draft,
     adminNotes: b.adminNotes,
   };
-}
-
-/** Keep only known form fields, in the shape the form uses. */
-function cleanPrefill(raw: unknown): Partial<FormData> {
-  const out: Record<string, unknown> = {};
-  if (!raw || typeof raw !== "object") return out as Partial<FormData>;
-  const input = raw as Record<string, unknown>;
-  for (const key of Object.keys(EMPTY_FORM_DATA) as (keyof FormData)[]) {
-    if (!(key in input)) continue;
-    const empty = EMPTY_FORM_DATA[key] as unknown;
-    const value = input[key];
-    if (Array.isArray(empty)) {
-      if (Array.isArray(value)) out[key] = value.filter((v) => typeof v === "string").map((v) => (v as string).slice(0, 500));
-    } else if (typeof empty === "string") {
-      if (typeof value === "string") out[key] = value.slice(0, 20_000);
-    } else if (typeof value === typeof empty) {
-      out[key] = value;
-    }
-  }
-  return out as Partial<FormData>;
 }
 
 function str(v: unknown, max = 300): string | undefined {
@@ -106,10 +82,10 @@ async function need(id: unknown): Promise<BriefRecord> {
   return brief;
 }
 
-const FIELD_NAMES = Object.keys(EMPTY_FORM_DATA);
+const FIELD_NAMES = FIELDS.map((d) => d.key);
 const prefillSchema = {
   type: "object",
-  description: `Answers to pre-fill, keyed by field name. Known fields: ${FIELD_NAMES.join(", ")}. Unknown fields are ignored.`,
+  description: `Answers to pre-fill, keyed by field name. Text fields take a string. ltv and budget take a number. regulations and pastCreative take {selected: string[], other: string}. Known fields: ${FIELD_NAMES.join(", ")}. Unknown fields are ignored.`,
   additionalProperties: true,
 };
 
@@ -176,7 +152,7 @@ export const TOOLS: ToolDef[] = [
         prospectEmail: contactEmail,
         granolaNoteUrl: str(a.granolaNoteUrl, 1000),
         adminNotes: str(a.adminNotes, 10_000),
-        formData: { ...cleanPrefill(a.prefill), companyName, contactName, contactEmail },
+        formData: { ...cleanAnswers(a.prefill), companyName, contactName, contactEmail },
       });
       return detail(brief);
     },
@@ -212,7 +188,7 @@ export const TOOLS: ToolDef[] = [
       if (a.prefill !== undefined || contactName !== undefined || contactEmail !== undefined) {
         patch.formData = {
           ...brief.formData,
-          ...cleanPrefill(a.prefill),
+          ...cleanAnswers(a.prefill),
           ...(contactName !== undefined ? { contactName } : {}),
           ...(contactEmail !== undefined ? { contactEmail } : {}),
         };

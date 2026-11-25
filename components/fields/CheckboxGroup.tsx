@@ -55,31 +55,23 @@ export default function CheckboxGroup({
       aria-describedby={[helpId, errId].filter(Boolean).join(" ") || undefined}
       aria-invalid={error ? "true" : "false"}
     >
-      <legend className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-mmc-text">
+      <legend className="tl-label flex w-full flex-wrap items-center gap-x-2 gap-y-1">
         <span>
           {label}
           {required ? <span aria-hidden="true" className="text-mmc-error"> *</span> : null}
         </span>
         {needsInput ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-mmc-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-mmc-gold">
-            <span className="h-1.5 w-1.5 rounded-full bg-mmc-gold" aria-hidden="true" />
-            Needs your input
-          </span>
+          <span className="tl-pill ml-auto">Needs your answer</span>
         ) : null}
       </legend>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-row flex-wrap gap-2">
         {allOpts.map((opt) => {
           const checked = value.selected.includes(opt);
           const optId = `${groupId}-${opt.replace(/\s+/g, "-")}`;
           const isOther = opt === "Other";
           return (
-            <div key={opt}>
-              <label
-                htmlFor={optId}
-                className={`flex cursor-pointer items-center gap-3 rounded-md border px-4 py-3 transition ${
-                  checked ? "border-mmc-accent bg-white" : "border-mmc-border bg-white hover:border-mmc-dark/40"
-                }`}
-              >
+            <div key={opt} className={isOther && otherChecked ? "flex basis-full flex-col" : ""}>
+              <label htmlFor={optId} className={`tl-chip ${checked ? "tl-chip-on" : ""}`}>
                 <input
                   id={optId}
                   type="checkbox"
@@ -87,26 +79,7 @@ export default function CheckboxGroup({
                   onChange={() => toggle(opt)}
                   className="sr-only"
                 />
-                <span
-                  aria-hidden="true"
-                  className={`inline-flex h-4 w-4 flex-none items-center justify-center rounded border-2 ${
-                    checked ? "border-mmc-accent bg-mmc-accent" : "border-mmc-border bg-white"
-                  }`}
-                >
-                  {checked ? (
-                    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-                      <path
-                        d="M1.5 5.5l2 2 5-5"
-                        fill="none"
-                        stroke="#FFFFFF"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  ) : null}
-                </span>
-                <span className="text-sm text-mmc-text">{isOther ? "Other" : opt}</span>
+                {isOther ? "Other" : opt}
               </label>
               {isOther && otherChecked ? (
                 <input
@@ -115,7 +88,7 @@ export default function CheckboxGroup({
                   onChange={(e) => onOtherText(e.target.value)}
                   placeholder="Please specify"
                   aria-label="Other — please specify"
-                  className="mt-2 w-full rounded-md border border-mmc-border bg-white px-4 py-3 text-mmc-text outline-none transition focus:border-mmc-dark focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-mmc-bg"
+                  className="mt-2 w-full rounded-[10px] border border-mmc-border bg-white px-3.5 py-[11px] text-sm text-mmc-text outline-none transition focus:border-mmc-dark focus:ring-2 focus:ring-mmc-gold focus:ring-offset-1 focus:ring-offset-white"
                 />
               ) : null}
             </div>

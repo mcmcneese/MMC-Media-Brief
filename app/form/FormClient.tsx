@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import ErrorShell from "@/components/ErrorShell";
 import FormShell from "@/components/FormShell";
-import Hero from "@/components/Hero";
-import Sidebar from "@/components/Sidebar";
 import ContactStep from "@/components/ContactStep";
 import Section1Company from "@/components/Section1Company";
 import Section2Audience from "@/components/Section2Audience";
@@ -25,6 +24,8 @@ export interface FormClientProps {
   initialData?: FormData;
   /** The step the company was on when their progress was last saved. */
   initialStep?: number;
+  /** A look at the brief by the team: nothing is tracked, saved or submitted. */
+  preview?: boolean;
   /**
    * The brief token (Airtable record identifier) for the prospect.
    * When provided, submission updates that Airtable record instead of just
@@ -41,6 +42,7 @@ export interface FormClientProps {
 export default function FormClient({
   initialData,
   initialStep,
+  preview = false,
   briefToken,
   prospectCompanyName,
 }: FormClientProps) {
@@ -60,15 +62,12 @@ export default function FormClient({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
 
-  const formAnchorRef = useRef<HTMLDivElement | null>(null);
   const submitted = useRef(false);
+  const [savedAt, setSavedAt] = useState<string>("");
+  const [exited, setExited] = useState(false);
 
   const scrollToForm = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const el = formAnchorRef.current;
-    if (!el) return;
-    const headerOffset = 72;
-    const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
-    window.scrollTo({ top, behavior });
+    window.scrollTo({ top: 0, behavior });
   }, []);
 
   // --- Initial gate check + state hydration ---
@@ -86,15 +85,21 @@ export default function FormClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ briefToken, ...payload }),
         keepalive,
-      }).catch(() => undefined),
+      })
+        .then(async (res) => {
+          const body = (await res.json().catch(() => null)) as { savedAt?: string | null } | null;
+          if (res.ok && body?.savedAt) setSavedAt(body.savedAt);
+          return res.ok;
+        })
+        .catch(() => false),
     [briefToken]
   );
 
   // First open, recorded from the browser so link previews do not count.
   useEffect(() => {
-    if (!hasToken) return;
+    if (!hasToken || preview) return;
     void post({ event: "opened" });
-  }, [hasToken, post]);
+  }, [hasToken, preview, post]);
 
   // Save shortly after the company changes an answer or moves section, and
   // once more as they leave the page. Nothing is saved until they change
@@ -104,7 +109,7 @@ export default function FormClient({
   latest.current = { data, step };
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!ready || !hasToken || !dirty.current) return;
+    if (!ready || !hasToken || preview || !dirty.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       void post({ event: "save", data, step });
@@ -112,17 +117,17 @@ export default function FormClient({
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [data, step, ready, hasToken, post]);
+  }, [data, step, ready, hasToken, preview, post]);
 
   useEffect(() => {
-    if (!hasToken) return;
+    if (!hasToken || preview) return;
     const flush = () => {
       if (!dirty.current || submitted.current) return;
       void post({ event: "save", data: latest.current.data, step: latest.current.step }, true);
     };
     window.addEventListener("pagehide", flush);
     return () => window.removeEventListener("pagehide", flush);
-  }, [hasToken, post]);
+  }, [hasToken, preview, post]);
 
 
   const setField = useCallback(<K extends keyof FormData>(key: K, value: FormData[K]) => {
@@ -168,6 +173,10 @@ export default function FormClient({
   };
 
   const submit = async () => {
+    if (preview) {
+      setSubmitError("This is a preview. Nothing is saved or submitted from here.");
+      return;
+    }
     setSubmitError("");
     const result = fullSchema.safeParse(data);
     if (!result.success) {
@@ -256,38 +265,57 @@ export default function FormClient({
   }
 
   const title = STEPS[step].title;
-  const kicker = STEPS[step].kicker;
   const hasPrefill = hasToken;
   const stepProps = { data, setField, errors, shakeKey, hasPrefill };
+  const intro =
+    step === 0
+      ? ""
+      : step === 5
+      ? "Check your answers, then submit."
+      : "We filled in what we heard on our calls. Edit anything that is off.";
+  const savedLabel = preview
+    ? "Preview"
+    : savedAt
+    ? `Saved ${new Date(savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+    : "";
 
-  const hero =
-    step === 0 ? (
-      <Hero
-        onBegin={() => scrollToForm("smooth")}
-        prospectCompanyName={prospectCompanyName}
-        hasPrefill={hasPrefill}
+  const saveAndExit = async () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (!preview && dirty.current) {
+      const ok = await post({ event: "save", data, step });
+      if (!ok) {
+        setSubmitError("Your answers could not be saved just now. Please try again in a moment.");
+        return;
+      }
+    }
+    setExited(true);
+  };
+
+  if (exited) {
+    return (
+      <ErrorShell
+        kicker="Saved"
+        headline="Your answers are saved"
+        body="You can close this page. Open the same link any time to pick up where you left off."
       />
-    ) : null;
+    );
+  }
 
   return (
     <FormShell
       step={step}
       title={title}
-      kicker={kicker}
+      intro={intro}
+      savedLabel={savedLabel}
+      incompleteSteps={Object.keys(incompleteByStep).map(Number)}
+      onJump={(n) => jumpTo(n as StepIndex)}
       onBack={step === 0 ? undefined : handleBack}
       onNext={handleNext}
-      nextLabel={step === 5 ? "Submit Brief" : "Continue"}
+      onSaveExit={preview ? undefined : saveAndExit}
+      nextLabel={step === 5 ? "Submit brief" : "Continue"}
       isSubmitting={submitting}
-      hero={hero}
-      formAnchorRef={formAnchorRef}
-      sidebar={
-        <Sidebar
-          currentStep={step}
-          onJump={jumpTo}
-          incompleteSteps={Object.keys(incompleteByStep).map(Number)}
-        />
-      }
     >
+      <div className="flex flex-col gap-5">
       {step === 0 && <ContactStep {...stepProps} />}
       {step === 1 && <Section1Company {...stepProps} />}
       {step === 2 && <Section2Audience {...stepProps} />}
@@ -296,6 +324,7 @@ export default function FormClient({
       {step === 5 && (
         <ReviewStep data={data} onEdit={jumpTo} incompleteByStep={incompleteByStep} />
       )}
+      </div>
 
       {submitError ? (
         <div
