@@ -26,17 +26,14 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function DateInpu
     : "border-mmc-border focus:border-mmc-dark";
 
   return (
-    <div className={`flex flex-col gap-1 ${shake ? "mmc-shake" : ""}`}>
-      <label htmlFor={inputId} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-mmc-text">
+    <div className={`flex flex-col gap-1.5 ${shake ? "mmc-shake" : ""}`}>
+      <label htmlFor={inputId} className="tl-label flex w-full flex-wrap items-center gap-x-2 gap-y-1">
         <span>
           {label}
           {required ? <span aria-hidden="true" className="text-mmc-error"> *</span> : null}
         </span>
         {needsInput ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-mmc-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-mmc-gold">
-            <span className="h-1.5 w-1.5 rounded-full bg-mmc-gold" aria-hidden="true" />
-            Needs your input
-          </span>
+          <span className="tl-pill ml-auto">Needs your answer</span>
         ) : null}
       </label>
       <input
@@ -45,7 +42,7 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function DateInpu
         type="date"
         aria-invalid={error ? "true" : "false"}
         aria-describedby={[helpId, errId].filter(Boolean).join(" ") || undefined}
-        className={`w-full rounded-md border ${borderColor} bg-white px-4 py-3 text-mmc-text outline-none transition focus:ring-2 focus:ring-mmc-accent focus:ring-offset-2 focus:ring-offset-mmc-bg ${className}`}
+        className={`w-full rounded-[10px] border ${borderColor} bg-white px-3.5 py-[11px] text-sm text-mmc-text outline-none transition focus:ring-2 focus:ring-mmc-gold focus:ring-offset-1 focus:ring-offset-white ${className}`}
         {...rest}
       />
       {helpText ? (

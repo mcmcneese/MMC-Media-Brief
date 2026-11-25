@@ -2,121 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face { font-family: "Geist"; font-weight: 400; font-display: swap; src: url("/fonts/geist-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Geist"; font-weight: 500; font-display: swap; src: url("/fonts/geist-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Geist"; font-weight: 600 700; font-display: swap; src: url("/fonts/geist-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Geist Mono"; font-weight: 400; font-display: swap; src: url("/fonts/geist-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Geist Mono"; font-weight: 500 600; font-display: swap; src: url("/fonts/geist-mono-latin-500-normal.woff2") format("woff2"); }
+
 :root {
-  --mmc-cream: #F5F2EC;
-  --mmc-cream-deep: #E8E3D7;
-  --mmc-purple: #5D2B5E;
-  --mmc-purple-deep: #3A1A3D;
-  --mmc-purple-dark: #2A1230;
-  --mmc-gold: #B89043;
-  --mmc-text: #2A2A2A;
+  --tl-ink: #111111;
+  --tl-gray: #5A606B;
+  --tl-line: #ECEEF1;
+  --tl-ground: #F4F5F7;
+  --tl-aqua: #8EDCD7;
+  --tl-aqua-soft: #C9EFEC;
+  --tl-yellow: #FEF790;
 }
 
 html,
 body {
-  background-color: var(--mmc-cream);
-  color: var(--mmc-text);
+  background-color: var(--tl-ground);
+  color: var(--tl-ink);
 }
-
-/* -----------------------------------------------------
-   Cream body with subtle ambient color & static grain.
-   Layered with very low opacity so it never distracts.
-   ----------------------------------------------------- */
 body {
-  position: relative;
   min-height: 100vh;
-  background:
-    /* Top-left subtle purple wash */
-    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(93, 43, 94, 0.08), transparent 60%),
-    /* Bottom-right gold wash */
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(184, 144, 67, 0.06), transparent 60%),
-    var(--mmc-cream);
-  background-attachment: fixed;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
-/* Static grain layer (data-URI SVG noise) — purely decorative */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.35;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.16  0 0 0 0 0.18  0 0 0 0.045 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
-
-/* Make sure app content sits above the grain */
-body > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* -----------------------------------------------------
-   Hero — deep purple gradient with slow ambient motion.
-   ----------------------------------------------------- */
-.mmc-hero {
-  position: relative;
-  overflow: hidden;
-  background:
-    linear-gradient(135deg, #2A1230 0%, #3A1A3D 35%, #5D2B5E 70%, #4A2050 100%);
-  isolation: isolate;
-}
-
-/* Slowly drifting radial highlight to give the bg life */
-.mmc-hero::before {
-  content: "";
-  position: absolute;
-  inset: -25%;
-  z-index: -1;
-  background:
-    radial-gradient(ellipse 50% 40% at 30% 35%, rgba(184, 144, 67, 0.18), transparent 60%),
-    radial-gradient(ellipse 45% 35% at 75% 60%, rgba(212, 179, 112, 0.12), transparent 60%);
-  filter: blur(20px);
-  animation: mmc-hero-drift 22s ease-in-out infinite alternate;
-}
-
-/* Subtle grain over the hero too */
-.mmc-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.18;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
-
-@keyframes mmc-hero-drift {
-  0%   { transform: translate3d(-3%, -2%, 0) rotate(0deg); }
-  50%  { transform: translate3d(3%, 2%, 0) rotate(2deg); }
-  100% { transform: translate3d(-2%, 3%, 0) rotate(-2deg); }
-}
-
-/* -----------------------------------------------------
-   Kicker label — small uppercase gold tracker above H1s.
-   Mirrors the deck's section labels.
-   ----------------------------------------------------- */
-.mmc-kicker {
+/* Small uppercase label, used above every answer and for status lines. */
+.tl-label {
+  font-family: "Geist Mono", ui-monospace, monospace;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  font-weight: 500;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--mmc-gold);
+  color: #4A4F58;
 }
-
-/* Gold horizontal rule under section titles */
-.mmc-rule {
-  display: block;
-  height: 2px;
-  width: 56px;
-  background: var(--mmc-gold);
+.tl-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tl-ink);
+  background: var(--tl-aqua-soft);
 }
+.tl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid #C9CDD3;
+  background: #FFFFFF;
+  color: var(--tl-ink);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.tl-btn:hover { background: var(--tl-ground); }
+.tl-btn:focus-visible { outline: 2px solid #2E9A94; outline-offset: 2px; }
+.tl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.tl-btn-primary { background: var(--tl-ink); border-color: var(--tl-ink); color: #FFFFFF; }
+.tl-btn-primary:hover { background: #2A2A2A; }
+.tl-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1px solid #C9CDD3;
+  background: #FFFFFF;
+  color: var(--tl-ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.tl-chip:hover { border-color: var(--tl-ink); }
+.tl-chip-on { background: var(--tl-ink); border-color: var(--tl-ink); color: #FFFFFF; }
+.tl-chip:focus-within { outline: 2px solid #2E9A94; outline-offset: 2px; }
 
-/* -----------------------------------------------------
-   Field validation shake
-   ----------------------------------------------------- */
+/* Ribbon and wing at the foot of the page. */
+.tl-bands { position: relative; height: 262px; margin-top: 24px; pointer-events: none; overflow: hidden; }
+@media (max-width: 760px) { .tl-bands { display: none; } }
+
+/* Names kept from the original theme. */
+.mmc-kicker { font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: #4A4F58; }
+.mmc-rule { display: none; }
+
 @keyframes mmc-shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-6px); }
@@ -126,15 +109,10 @@ body > * {
 }
 .mmc-shake { animation: mmc-shake 0.35s ease-in-out; }
 
-/* Date input typography consistency */
 input[type="date"] { font-family: inherit; }
-
-/* Avoid iOS zoom on focus */
 @media (max-width: 640px) {
   input, textarea, select { font-size: 16px; }
 }
-
-/* Respect users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .mmc-hero::before { animation: none; }
+  .mmc-shake { animation: none; }
 }

@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import ErrorShell from "@/components/ErrorShell";
 import FormShell from "@/components/FormShell";
-import Hero from "@/components/Hero";
-import Sidebar from "@/components/Sidebar";
 import ContactStep from "@/components/ContactStep";
 import Section1Company from "@/components/Section1Company";
 import Section2Audience from "@/components/Section2Audience";
@@ -63,15 +62,12 @@ export default function FormClient({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
 
-  const formAnchorRef = useRef<HTMLDivElement | null>(null);
   const submitted = useRef(false);
+  const [savedAt, setSavedAt] = useState<string>("");
+  const [exited, setExited] = useState(false);
 
   const scrollToForm = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const el = formAnchorRef.current;
-    if (!el) return;
-    const headerOffset = 72;
-    const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
-    window.scrollTo({ top, behavior });
+    window.scrollTo({ top: 0, behavior });
   }, []);
 
   // --- Initial gate check + state hydration ---
@@ -89,7 +85,13 @@ export default function FormClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ briefToken, ...payload }),
         keepalive,
-      }).catch(() => undefined),
+      })
+        .then(async (res) => {
+          const body = (await res.json().catch(() => null)) as { savedAt?: string | null } | null;
+          if (res.ok && body?.savedAt) setSavedAt(body.savedAt);
+          return res.ok;
+        })
+        .catch(() => false),
     [briefToken]
   );
 
@@ -263,38 +265,57 @@ export default function FormClient({
   }
 
   const title = STEPS[step].title;
-  const kicker = STEPS[step].kicker;
   const hasPrefill = hasToken;
   const stepProps = { data, setField, errors, shakeKey, hasPrefill };
+  const intro =
+    step === 0
+      ? ""
+      : step === 5
+      ? "Check your answers, then submit."
+      : "We filled in what we heard on our calls. Edit anything that is off.";
+  const savedLabel = preview
+    ? "Preview"
+    : savedAt
+    ? `Saved ${new Date(savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+    : "";
 
-  const hero =
-    step === 0 ? (
-      <Hero
-        onBegin={() => scrollToForm("smooth")}
-        prospectCompanyName={prospectCompanyName}
-        hasPrefill={hasPrefill}
+  const saveAndExit = async () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (!preview && dirty.current) {
+      const ok = await post({ event: "save", data, step });
+      if (!ok) {
+        setSubmitError("Your answers could not be saved just now. Please try again in a moment.");
+        return;
+      }
+    }
+    setExited(true);
+  };
+
+  if (exited) {
+    return (
+      <ErrorShell
+        kicker="Saved"
+        headline="Your answers are saved"
+        body="You can close this page. Open the same link any time to pick up where you left off."
       />
-    ) : null;
+    );
+  }
 
   return (
     <FormShell
       step={step}
       title={title}
-      kicker={kicker}
+      intro={intro}
+      savedLabel={savedLabel}
+      incompleteSteps={Object.keys(incompleteByStep).map(Number)}
+      onJump={(n) => jumpTo(n as StepIndex)}
       onBack={step === 0 ? undefined : handleBack}
       onNext={handleNext}
-      nextLabel={step === 5 ? "Submit Brief" : "Continue"}
+      onSaveExit={preview ? undefined : saveAndExit}
+      nextLabel={step === 5 ? "Submit brief" : "Continue"}
       isSubmitting={submitting}
-      hero={hero}
-      formAnchorRef={formAnchorRef}
-      sidebar={
-        <Sidebar
-          currentStep={step}
-          onJump={jumpTo}
-          incompleteSteps={Object.keys(incompleteByStep).map(Number)}
-        />
-      }
     >
+      <div className="flex flex-col gap-5">
       {step === 0 && <ContactStep {...stepProps} />}
       {step === 1 && <Section1Company {...stepProps} />}
       {step === 2 && <Section2Audience {...stepProps} />}
@@ -303,6 +324,7 @@ export default function FormClient({
       {step === 5 && (
         <ReviewStep data={data} onEdit={jumpTo} incompleteByStep={incompleteByStep} />
       )}
+      </div>
 
       {submitError ? (
         <div

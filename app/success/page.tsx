@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
 import MMCLogo from "@/components/MMCLogo";
 
 interface CachedDocx {
@@ -60,35 +59,21 @@ function SuccessContent() {
   const downloadFilename = cached?.filename;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 border-b border-mmc-border/70 bg-mmc-cream/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
-          <MMCLogo height={64} priority />
-          <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-mmc-gold md:block">
-            Media Brief
-          </span>
-          <span />
-        </div>
+    <div className="flex min-h-screen flex-col items-center px-4">
+      <header className="flex w-full max-w-[760px] items-end gap-4 pb-[22px] pt-9">
+        <MMCLogo priority />
+        <span className="flex-grow" />
+        <span className="text-[15px] font-semibold">Media brief</span>
       </header>
 
-      <main className="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-16 sm:px-6">
-        <div className="w-full rounded-lg border border-mmc-border bg-white p-8 text-center shadow-[0_1px_2px_rgba(42,18,48,0.04),0_12px_32px_-12px_rgba(42,18,48,0.18)] sm:p-10">
-          <div className="mb-5 flex justify-center">
-            <CheckCircle2 size={64} color="#5D2B5E" strokeWidth={1.5} aria-hidden="true" />
-          </div>
-          <div className="mb-2 flex items-center justify-center">
-            <span className="mmc-kicker">Brief Received</span>
-          </div>
-          <h1 className="text-2xl font-bold text-mmc-purple sm:text-3xl">
-            Brief Submitted <span className="text-mmc-gold">Successfully</span>
-          </h1>
-          <div className="mt-3 flex justify-center">
-            <span className="mmc-rule" />
-          </div>
-          <p className="mt-5 text-sm leading-relaxed text-mmc-muted">
+      <main className="flex w-full max-w-[760px] flex-col">
+        <div className="flex w-full flex-col items-start gap-4 rounded-3xl bg-white px-5 py-7 sm:px-9 sm:py-8">
+          <span className="tl-pill">Brief received</span>
+          <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.02em]">Your brief is submitted</h1>
+          <p className="max-w-[560px] text-[15px] leading-6 text-mmc-muted">
             Thank you. Our team will be in touch shortly to schedule a media strategy review.
           </p>
-          <p className="mt-4 text-sm leading-relaxed text-mmc-text">
+          <p className="max-w-[560px] text-[15px] leading-6 text-mmc-text">
             Please download a copy of your brief below for your records.
             A copy has also been sent to the MMC Media Strategy Team.
           </p>
@@ -97,12 +82,12 @@ function SuccessContent() {
             <a
               href={downloadHref}
               download={downloadFilename}
-              className="mt-8 inline-flex w-full items-center justify-center rounded-md bg-mmc-purple px-7 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-mmc-gold focus:ring-offset-2 focus:ring-offset-white sm:w-auto"
+              className="tl-btn tl-btn-primary mt-1"
             >
-              Download Your Brief (.docx)
+              Download your brief (.docx)
             </a>
           ) : (
-            <p className="mt-6 text-xs text-mmc-muted">
+            <p className="text-[13px] text-mmc-muted">
               No download token was provided. Please contact{" "}
               <a href="mailto:mediastrategy@mmc.us" className="underline">
                 mediastrategy@mmc.us
@@ -111,7 +96,7 @@ function SuccessContent() {
             </p>
           )}
 
-          <p className="mt-6 text-xs text-mmc-muted">
+          <p className="text-[13px] text-mmc-muted">
             {cached
               ? "Available for download from this page now."
               : "Download link is available for 24 hours."}
