@@ -174,13 +174,17 @@ function parseFormData(raw: unknown): FormData {
 }
 
 /**
- * Draft Data holds JSON. If the Airtable field has rich text formatting on,
- * Airtable returns it with markdown escapes, so a failed parse is retried
- * with those escapes removed before the draft is given up on.
+ * Draft Data is a rich text field. The saved progress is written as JSON
+ * inside a fenced code block so the field's formatting never alters an
+ * answer. A value without the fence is still read, and a failed parse is
+ * retried with markdown escapes removed before the draft is given up on.
  */
 function parseDraft(raw: unknown): BriefDraft | null {
   if (typeof raw !== "string" || raw.trim().length === 0) return null;
-  const attempts = [raw.trim(), raw.trim().replace(/\\([_*~`\[\]<>#+\-.!|()])/g, "$1")];
+  // Saved as a fenced code block, which rich text fields keep verbatim.
+  const fenced = raw.trim().match(/^```[a-z]*\s*\n([\s\S]*?)\n?```\s*$/);
+  const body = fenced ? fenced[1].trim() : raw.trim();
+  const attempts = [body, body.replace(/\\([_*~`\[\]<>#+\-.!|()])/g, "$1")];
   for (const text of attempts) {
     try {
       const parsed = JSON.parse(text) as Partial<BriefDraft>;
@@ -268,7 +272,7 @@ function fieldsFromInput(input: CreateBriefInput | UpdateBriefInput): AirtableFi
     f[FIELDS.startedAt] = input.startedAt;
   }
   if ("draft" in input && input.draft !== undefined) {
-    f[FIELDS.draftData] = input.draft === null ? "" : JSON.stringify(input.draft);
+    f[FIELDS.draftData] = input.draft === null ? "" : "```\n" + JSON.stringify(input.draft, null, 2) + "\n```";
   }
   if ("reminderDraftedAt" in input && input.reminderDraftedAt !== undefined) {
     f[FIELDS.reminderDraftedAt] = input.reminderDraftedAt;
