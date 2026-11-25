@@ -75,11 +75,12 @@ export default async function FormPage({ searchParams }: FormPageProps) {
     />;
   }
 
-  // Brief is in Draft or Sent state — render the form, pre-filled from
-  // Airtable, with no password gate.
+  // Brief is in Draft or Sent state: render the form, pre-filled from the
+  // record, with the company's own saved progress laid over the pre-fill.
   return (
     <FormClient
-      initialData={brief.formData}
+      initialData={brief.draft ? { ...brief.formData, ...brief.draft.data } : brief.formData}
+      initialStep={brief.draft ? brief.draft.step : 0}
       briefToken={brief.token}
       prospectCompanyName={brief.companyName || undefined}
     />

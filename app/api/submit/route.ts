@@ -55,20 +55,6 @@ export async function POST(req: NextRequest) {
       { status: 403 }
     );
   }
-  // 1. Validate server-side (defense in depth). The schema strips unknown keys,
-  // so we read `briefToken` from the raw payload separately.
-  const parsed = fullSchema.safeParse(payload);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Validation failed.",
-        errors: parsed.error.issues,
-      },
-      { status: 400 }
-    );
-  }
-  const data = parsed.data;
   if (!isAirtableConfigured()) {
     return NextResponse.json(
       { success: false, message: "Brief records are not available right now. Please try again shortly." },
@@ -98,6 +84,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 1. Validate server-side (defense in depth). The schema strips unknown keys,
+  // so we read `briefToken` from the raw payload separately.
+  const parsed = fullSchema.safeParse(payload);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Validation failed.",
+        errors: parsed.error.issues,
+      },
+      { status: 400 }
+    );
+  }
+  const data = parsed.data;
   try {
     // 2. Generate token + docx
     const token = crypto.randomUUID();
@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
         status: "Submitted",
         submittedAt: new Date().toISOString(),
         formData: data,
+        draft: null,
         // Keep contact info in sync with what the prospect actually entered,
         // overriding any stale admin pre-fill.
         prospectName: data.contactName,
