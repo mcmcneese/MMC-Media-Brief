@@ -1,6 +1,6 @@
 # MMC Media Brief
 
-A password-gated, mobile-responsive online intake form for **Mercurius Media Capital (MMC)**.
+A mobile-responsive online intake form, opened from a personal link per company, for **Mercurius Media Capital (MMC)**.
 Prospective portfolio companies receive a link, fill out the brief in one sitting
 (with save-and-resume), and on submission a Word document (`.docx`) is emailed to
 MMC and offered as a download to the prospect.
@@ -34,8 +34,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Then open http://localhost:3000. The password is `ATTENTION` by default
-(change it in `lib/config.ts`).
+Then open http://localhost:3000. Each brief opens from its own link, created in the admin area.
 
 > Tip — local dev works without a Resend key. Emails will be skipped
 > (a warning is logged), but the .docx is still generated and the download
@@ -82,7 +81,6 @@ Almost everything non-developers need to change lives in a single file:
 
 | What you want to change | Where |
 |---|---|
-| The shared password | `CONFIG.PASSWORD` |
 | Who receives MMC notification emails | `CONFIG.EMAIL.mmcRecipients` |
 | Who receives error alerts | `CONFIG.EMAIL.errorRecipient` |
 | The "from" email address | `CONFIG.EMAIL.from` |
@@ -98,8 +96,6 @@ in ~30 seconds.
 
 ### Common maintenance tasks
 
-**How do I change the password?**
-Edit the `PASSWORD` field in `lib/config.ts`. Commit and push.
 
 **How do I add another MMC recipient?**
 Add their email to the `mmcRecipients` array in `lib/config.ts`:
@@ -142,11 +138,7 @@ Four changes are needed for every new question:
   If the serverless function instance cycles, a prospect's download link may
   expire early. Acceptable trade-off for v1. Upgrade path: replace with
   [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) or S3.
-- **Single shared password.** A single global password, compared client-side,
-  is used for all prospects. It's a deterrent, not real auth. Upgrade path:
-  issue per-prospect links with a short-lived signed JWT.
+- **Personal links only.** The form and the submit endpoint both require a valid brief link.
 - **No submissions database.** Each submission is emailed, but nothing is
   persisted beyond the 24-hour download cache. Upgrade path: append to
   Airtable / Google Sheets / a Postgres table on submit.
-- **Client-side password gate.** Low-security by design — anyone determined
-  enough can bypass it by reading the JS bundle.

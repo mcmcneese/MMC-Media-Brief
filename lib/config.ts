@@ -11,11 +11,6 @@
 // ============================================================
 
 export const CONFIG = {
-  // --- ACCESS ---
-  // Shared password every prospect uses to open the form.
-  // To change: edit the string below, commit, push. Done.
-  PASSWORD: "ATTENTION",
-
   // --- BRANDING ---
   BRAND: {
     name: "Mercurius Media Capital",

@@ -70,24 +70,3 @@ export function clearDraft(): void {
     /* noop */
   }
 }
-
-// Session-storage unlock flag for password gate.
-const UNLOCK_KEY = "mmc_brief_unlocked";
-
-export function setUnlocked(): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.sessionStorage.setItem(UNLOCK_KEY, "true");
-  } catch {
-    /* noop */
-  }
-}
-
-export function isUnlocked(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.sessionStorage.getItem(UNLOCK_KEY) === "true";
-  } catch {
-    return false;
-  }
-}

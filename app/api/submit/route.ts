@@ -40,6 +40,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const briefToken =
+    payload && typeof payload === "object" && "briefToken" in payload &&
+    typeof (payload as Record<string, unknown>).briefToken === "string"
+      ? ((payload as Record<string, unknown>).briefToken as string).trim()
+      : "";
+
+  // 0. Every submission must come from a personal brief link. No token, an
+  // unknown token, or a brief that is already closed is refused before any
+  // document is generated or any email is sent.
+  if (!briefToken) {
+    return NextResponse.json(
+      { success: false, message: "This brief can only be submitted from your personal link." },
+      { status: 403 }
+    );
+  }
   // 1. Validate server-side (defense in depth). The schema strips unknown keys,
   // so we read `briefToken` from the raw payload separately.
   const parsed = fullSchema.safeParse(payload);
@@ -54,11 +69,34 @@ export async function POST(req: NextRequest) {
     );
   }
   const data = parsed.data;
-  const briefToken =
-    payload && typeof payload === "object" && "briefToken" in payload &&
-    typeof (payload as Record<string, unknown>).briefToken === "string"
-      ? ((payload as Record<string, unknown>).briefToken as string).trim()
-      : "";
+  if (!isAirtableConfigured()) {
+    return NextResponse.json(
+      { success: false, message: "Brief records are not available right now. Please try again shortly." },
+      { status: 503 }
+    );
+  }
+  let openBrief: Awaited<ReturnType<typeof getBriefByToken>> = null;
+  try {
+    openBrief = await getBriefByToken(briefToken);
+  } catch (err) {
+    console.error("[submit] Airtable lookup failed:", err);
+    return NextResponse.json(
+      { success: false, message: "We could not verify your brief link. Please try again in a moment." },
+      { status: 503 }
+    );
+  }
+  if (!openBrief) {
+    return NextResponse.json(
+      { success: false, message: "This brief link is not valid." },
+      { status: 403 }
+    );
+  }
+  if (openBrief.status === "Submitted" || openBrief.status === "Expired") {
+    return NextResponse.json(
+      { success: false, message: "This brief is closed and can no longer be submitted." },
+      { status: 409 }
+    );
+  }
 
   try {
     // 2. Generate token + docx
@@ -72,35 +110,23 @@ export async function POST(req: NextRequest) {
     const baseUrl = getProductionUrl();
     const downloadUrl = `${baseUrl.replace(/\/$/, "")}/api/download/${token}`;
 
-    // 4a. If this submission came in via a tokenized prospect link, write the
-    // final form data back to the matching Airtable record and flip its
-    // status to Submitted. Best-effort: if Airtable fails, we still let the
+    // 4a. Write the final form data back to the brief's Airtable record and
+    // flip its status to Submitted. Best-effort: if Airtable fails, we still let the
     // prospect download their .docx and the MMC team still gets the email.
-    if (briefToken && isAirtableConfigured()) {
-      try {
-        const brief = await getBriefByToken(briefToken);
-        if (brief) {
-          await updateBrief(brief.id, {
-            status: "Submitted",
-            submittedAt: new Date().toISOString(),
-            formData: data,
-            // Keep contact info in sync with what the prospect actually entered,
-            // overriding any stale admin pre-fill.
-            prospectName: data.contactName,
-            prospectEmail: data.contactEmail,
-            companyName: data.companyName,
-          });
-          console.info(
-            `[submit] Airtable record ${brief.id} updated to Submitted (token ${briefToken}).`
-          );
-        } else {
-          console.warn(
-            `[submit] briefToken=${briefToken} provided but no Airtable record found.`
-          );
-        }
-      } catch (err) {
-        console.error("[submit] Airtable update failed (continuing):", err);
-      }
+    try {
+      await updateBrief(openBrief.id, {
+        status: "Submitted",
+        submittedAt: new Date().toISOString(),
+        formData: data,
+        // Keep contact info in sync with what the prospect actually entered,
+        // overriding any stale admin pre-fill.
+        prospectName: data.contactName,
+        prospectEmail: data.contactEmail,
+        companyName: data.companyName,
+      });
+      console.info(`[submit] Airtable record ${openBrief.id} updated to Submitted.`);
+    } catch (err) {
+      console.error("[submit] Airtable update failed (continuing):", err);
     }
 
     // 5. Send emails via Resend (if API key is present). If not configured, we still

@@ -15,9 +15,6 @@ import { EMPTY_FORM_DATA, STEPS, type FormData, type StepIndex } from "@/lib/typ
 import { fullSchema, incompleteFieldsByStep } from "@/lib/schema";
 import {
   clearDraft,
-  isUnlocked,
-  loadDraft,
-  loadStep,
   saveDraft,
   saveStep,
 } from "@/lib/storage";
@@ -53,9 +50,6 @@ export default function FormClient({
 
   const hasToken = Boolean(briefToken);
 
-  // When a token is present, we don't need the password gate and we skip
-  // localStorage hydration (the token's record IS the source of truth).
-  // Without a token, we fall back to the existing localStorage flow.
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<FormData>(
     initialData ? { ...EMPTY_FORM_DATA, ...initialData } : EMPTY_FORM_DATA
@@ -78,23 +72,10 @@ export default function FormClient({
 
   // --- Initial gate check + state hydration ---
   useEffect(() => {
-    if (hasToken) {
-      // Tokenized prospect: skip gate, initialData already in state.
-      setReady(true);
-      return;
-    }
-    if (!isUnlocked()) {
-      router.replace("/");
-      return;
-    }
-    const draft = loadDraft();
-    if (draft) setData({ ...EMPTY_FORM_DATA, ...draft });
-    const savedStep = loadStep();
-    if (savedStep >= 0 && savedStep <= 5) {
-      setStep(savedStep);
-    }
+    // The form only renders for a valid personal link; its record is the
+    // source of truth, so there is nothing to unlock or hydrate here.
     setReady(true);
-  }, [router, hasToken]);
+  }, []);
 
   // --- Debounced auto-save on data change (localStorage only — tokenized
   // briefs persist on submission, not on every keystroke) ---
