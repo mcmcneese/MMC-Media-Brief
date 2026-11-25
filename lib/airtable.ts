@@ -28,6 +28,10 @@ const FIELDS = {
   adminNotes: "Admin Notes",
   createdAt: "Created At",
   lastEditedAt: "Last Edited At",
+  openedAt: "Opened At",
+  startedAt: "Started At",
+  draftData: "Draft Data",
+  reminderDraftedAt: "Reminder Drafted At",
 } as const;
 
 export type BriefStatus = "Draft" | "Sent" | "Submitted" | "Expired";
@@ -48,6 +52,19 @@ export interface BriefRecord {
   adminNotes: string;
   createdAt: string | null;
   lastEditedAt: string | null;
+  /** First time the company opened their link in a browser. */
+  openedAt: string | null;
+  /** First time the company changed an answer. */
+  startedAt: string | null;
+  /** The company's saved progress before submitting. Null until they start. */
+  draft: BriefDraft | null;
+  reminderDraftedAt: string | null;
+}
+
+export interface BriefDraft {
+  data: Partial<FormData>;
+  step: number;
+  savedAt: string;
 }
 
 export interface CreateBriefInput {
@@ -74,6 +91,10 @@ export interface UpdateBriefInput {
   granolaNoteId?: string;
   granolaNoteUrl?: string;
   adminNotes?: string;
+  openedAt?: string | null;
+  startedAt?: string | null;
+  draft?: BriefDraft | null;
+  reminderDraftedAt?: string | null;
 }
 
 // ---------- config / env ----------
@@ -152,6 +173,34 @@ function parseFormData(raw: unknown): FormData {
   }
 }
 
+/**
+ * Draft Data is a rich text field. The saved progress is written as JSON
+ * inside a fenced code block so the field's formatting never alters an
+ * answer. A value without the fence is still read, and a failed parse is
+ * retried with markdown escapes removed before the draft is given up on.
+ */
+function parseDraft(raw: unknown): BriefDraft | null {
+  if (typeof raw !== "string" || raw.trim().length === 0) return null;
+  // Saved as a fenced code block, which rich text fields keep verbatim.
+  const fenced = raw.trim().match(/^```[a-z]*\s*\n([\s\S]*?)\n?```\s*$/);
+  const body = fenced ? fenced[1].trim() : raw.trim();
+  const attempts = [body, body.replace(/\\([_*~`\[\]<>#+\-.!|()])/g, "$1")];
+  for (const text of attempts) {
+    try {
+      const parsed = JSON.parse(text) as Partial<BriefDraft>;
+      if (!parsed || typeof parsed !== "object" || typeof parsed.data !== "object" || parsed.data === null) continue;
+      return {
+        data: parsed.data as Partial<FormData>,
+        step: typeof parsed.step === "number" ? parsed.step : 0,
+        savedAt: typeof parsed.savedAt === "string" ? parsed.savedAt : "",
+      };
+    } catch {
+      /* try the next form */
+    }
+  }
+  return null;
+}
+
 function normalizeStatus(raw: unknown): BriefStatus {
   if (raw === "Sent" || raw === "Submitted" || raw === "Expired") return raw;
   return "Draft";
@@ -174,6 +223,10 @@ function recordToBrief(rec: AirtableRecord): BriefRecord {
     adminNotes: String(f[FIELDS.adminNotes] ?? ""),
     createdAt: (f[FIELDS.createdAt] as string | undefined) ?? rec.createdTime,
     lastEditedAt: (f[FIELDS.lastEditedAt] as string | undefined) ?? null,
+    openedAt: (f[FIELDS.openedAt] as string | undefined) ?? null,
+    startedAt: (f[FIELDS.startedAt] as string | undefined) ?? null,
+    draft: parseDraft(f[FIELDS.draftData]),
+    reminderDraftedAt: (f[FIELDS.reminderDraftedAt] as string | undefined) ?? null,
   };
 }
 
@@ -212,6 +265,18 @@ function fieldsFromInput(input: CreateBriefInput | UpdateBriefInput): AirtableFi
   if ("adminNotes" in input && input.adminNotes !== undefined) {
     f[FIELDS.adminNotes] = input.adminNotes;
   }
+  if ("openedAt" in input && input.openedAt !== undefined) {
+    f[FIELDS.openedAt] = input.openedAt;
+  }
+  if ("startedAt" in input && input.startedAt !== undefined) {
+    f[FIELDS.startedAt] = input.startedAt;
+  }
+  if ("draft" in input && input.draft !== undefined) {
+    f[FIELDS.draftData] = input.draft === null ? "" : "```\n" + JSON.stringify(input.draft, null, 2) + "\n```";
+  }
+  if ("reminderDraftedAt" in input && input.reminderDraftedAt !== undefined) {
+    f[FIELDS.reminderDraftedAt] = input.reminderDraftedAt;
+  }
   return f;
 }
 
@@ -241,8 +306,10 @@ export async function getBriefById(id: string): Promise<BriefRecord | null> {
 }
 
 export async function getBriefByToken(token: string): Promise<BriefRecord | null> {
-  if (!token) return null;
-  const safe = token.replace(/"/g, "");
+  // Tokens are URL-safe by construction; anything else cannot match a brief
+  // and is never placed in the formula.
+  if (!token || !/^[A-Za-z0-9_-]{8,64}$/.test(token)) return null;
+  const safe = token;
   const formula = `({${FIELDS.token}} = "${safe}")`;
   const params = new URLSearchParams({
     filterByFormula: formula,

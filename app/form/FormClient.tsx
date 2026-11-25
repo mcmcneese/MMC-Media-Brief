@@ -13,16 +13,8 @@ import Section4Campaign from "@/components/Section4Campaign";
 import ReviewStep from "@/components/ReviewStep";
 import { EMPTY_FORM_DATA, STEPS, type FormData, type StepIndex } from "@/lib/types";
 import { fullSchema, incompleteFieldsByStep } from "@/lib/schema";
-import {
-  clearDraft,
-  isUnlocked,
-  loadDraft,
-  loadStep,
-  saveDraft,
-  saveStep,
-} from "@/lib/storage";
 
-const DEBOUNCE_MS = 500;
+const SAVE_DELAY_MS = 1500;
 
 export interface FormClientProps {
   /**
@@ -31,6 +23,8 @@ export interface FormClientProps {
    * with this data instead of localStorage.
    */
   initialData?: FormData;
+  /** The step the company was on when their progress was last saved. */
+  initialStep?: number;
   /**
    * The brief token (Airtable record identifier) for the prospect.
    * When provided, submission updates that Airtable record instead of just
@@ -46,6 +40,7 @@ export interface FormClientProps {
 
 export default function FormClient({
   initialData,
+  initialStep,
   briefToken,
   prospectCompanyName,
 }: FormClientProps) {
@@ -53,20 +48,20 @@ export default function FormClient({
 
   const hasToken = Boolean(briefToken);
 
-  // When a token is present, we don't need the password gate and we skip
-  // localStorage hydration (the token's record IS the source of truth).
-  // Without a token, we fall back to the existing localStorage flow.
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<FormData>(
     initialData ? { ...EMPTY_FORM_DATA, ...initialData } : EMPTY_FORM_DATA
   );
-  const [step, setStep] = useState<StepIndex>(0);
+  const [step, setStep] = useState<StepIndex>(
+    typeof initialStep === "number" && initialStep >= 0 && initialStep <= 5 ? (initialStep as StepIndex) : 0
+  );
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [shakeKey, setShakeKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
 
   const formAnchorRef = useRef<HTMLDivElement | null>(null);
+  const submitted = useRef(false);
 
   const scrollToForm = useCallback((behavior: ScrollBehavior = "smooth") => {
     const el = formAnchorRef.current;
@@ -78,44 +73,60 @@ export default function FormClient({
 
   // --- Initial gate check + state hydration ---
   useEffect(() => {
-    if (hasToken) {
-      // Tokenized prospect: skip gate, initialData already in state.
-      setReady(true);
-      return;
-    }
-    if (!isUnlocked()) {
-      router.replace("/");
-      return;
-    }
-    const draft = loadDraft();
-    if (draft) setData({ ...EMPTY_FORM_DATA, ...draft });
-    const savedStep = loadStep();
-    if (savedStep >= 0 && savedStep <= 5) {
-      setStep(savedStep);
-    }
+    // The form only renders for a valid personal link; its record is the
+    // source of truth, so there is nothing to unlock or hydrate here.
     setReady(true);
-  }, [router, hasToken]);
+  }, []);
 
-  // --- Debounced auto-save on data change (localStorage only — tokenized
-  // briefs persist on submission, not on every keystroke) ---
+  // --- Tracking and saved progress, kept on the brief's own record ---
+  const post = useCallback(
+    (payload: Record<string, unknown>, keepalive = false) =>
+      fetch("/api/brief/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ briefToken, ...payload }),
+        keepalive,
+      }).catch(() => undefined),
+    [briefToken]
+  );
+
+  // First open, recorded from the browser so link previews do not count.
+  useEffect(() => {
+    if (!hasToken) return;
+    void post({ event: "opened" });
+  }, [hasToken, post]);
+
+  // Save shortly after the company changes an answer or moves section, and
+  // once more as they leave the page. Nothing is saved until they change
+  // something, so opening a brief never counts as starting it.
+  const dirty = useRef(false);
+  const latest = useRef({ data, step });
+  latest.current = { data, step };
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!ready) return;
-    if (hasToken) return; // tokenized: don't write to localStorage
+    if (!ready || !hasToken || !dirty.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => saveDraft(data), DEBOUNCE_MS);
+    saveTimer.current = setTimeout(() => {
+      void post({ event: "save", data, step });
+    }, SAVE_DELAY_MS);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [data, ready, hasToken]);
+  }, [data, step, ready, hasToken, post]);
 
   useEffect(() => {
-    if (!ready) return;
-    if (hasToken) return;
-    saveStep(step);
-  }, [step, ready, hasToken]);
+    if (!hasToken) return;
+    const flush = () => {
+      if (!dirty.current || submitted.current) return;
+      void post({ event: "save", data: latest.current.data, step: latest.current.step }, true);
+    };
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, [hasToken, post]);
+
 
   const setField = useCallback(<K extends keyof FormData>(key: K, value: FormData[K]) => {
+    dirty.current = true;
     setData((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => {
       if (!prev[key]) return prev;
@@ -220,7 +231,8 @@ export default function FormClient({
           /* noop */
         }
       }
-      if (!hasToken) clearDraft();
+      submitted.current = true;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
       router.push(`/success?token=${encodeURIComponent(body.token)}`);
     } catch (err) {
       setSubmitError(
